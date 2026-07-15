@@ -1,10 +1,18 @@
 # GTA - Grand Turek Auto
 
-Satirická webová arkáda ve stylu Carmageddon. Bourej auta v provozu, sbírej
-**preferenční hlasy** a sleduj **Turkocam** — obličej ve stylu Doom HUD, který
-se šklebí podle toho, co se na silnici právě děje.
+Satirická webová arkáda. Bourej auta v provozu, sbírej **preferenční hlasy**
+a sleduj **Turkocam** — karikovaný obličej, který se šklebí podle toho, co se
+na silnici právě děje.
 
 > Satirická parodie. Všechny postavy jsou karikatury, vše je nadsázka.
+
+Hra má dva koncepty, vybírá se v úvodním menu (`index.html`):
+
+- **Koncept A — Carmageddon** (`carmageddon.html`): pohled shora, tři pruhy,
+  Turkocam v panelu ve stylu Doom.
+- **Koncept B — STUNTS** (`stunts.html`): first-person kokpit veterána
+  s pseudo-3D silnicí (zatáčky, kopce), volantem, budíky — a grimasami
+  ve **zpětném zrcátku**.
 
 ## Jak spustit
 
@@ -27,6 +35,8 @@ Hra je statická, takže funguje i na GitHub Pages
 | ↓ nebo S | brzda |
 | M | zvuk zap/vyp |
 | R | restart |
+| Esc | zpět do menu |
+| 1 / 2 (v menu) | výběr konceptu |
 
 ## Pravidla
 
@@ -40,14 +50,16 @@ Hra je statická, takže funguje i na GitHub Pages
 ## Struktura
 
 ```
-index.html      – markup + overlaye (start, novinový game over)
-css/style.css   – styly
-js/face.js      – Turkocam: stavový automat grimas + procedurální karikatura
-js/audio.js     – Web Audio: motor V8, rány, cinkání (žádné soubory)
-js/game.js      – herní logika: provoz, kolize, skóre, semafory
-js/main.js      – bootstrap, vstup, herní smyčka
+index.html       – úvodní menu s výběrem konceptu
+carmageddon.html – koncept A (top-down)
+stunts.html      – koncept B (first-person kokpit)
+css/style.css    – styly (hry, menu, novinový game over)
+js/face.js       – Turkocam: stavový automat grimas + procedurální karikatura
+                   (sdílený oběma koncepty — panel v A, zrcátko v B)
+js/audio.js      – Web Audio: motor V8, rány, cinkání (sdílený, žádné soubory)
+js/game.js       – koncept A: provoz, kolize, skóre, semafory
+js/main.js       – koncept A: bootstrap, vstup, smyčka
+js/stunts.js     – koncept B: pseudo-3D silnice, provoz, kokpit, zrcátko
 ```
 
-Modul `face.js` je záměrně nezávislý na pohledu hry — počítá se s ním i pro
-koncept B (first-person „STUNTS mód“, grimasy ve zpětném zrcátku), viz
-[GAME_CONCEPT.md](GAME_CONCEPT.md).
+Detailní návrh obou konceptů: [GAME_CONCEPT.md](GAME_CONCEPT.md).

@@ -68,7 +68,9 @@
 
   /* --------- kreslení (souřadnice v prostoru 0..100, škáluje se) --------- */
 
-  FaceCam.prototype.draw = function (ctx, x, y, size) {
+  // opts.frameless: bez pozadí a rámečku (např. ve zpětném zrcátku konceptu B)
+  FaceCam.prototype.draw = function (ctx, x, y, size, opts) {
+    opts = opts || {};
     var u = size / 100;
     ctx.save();
     ctx.translate(x, y);
@@ -77,9 +79,10 @@
     var e = this.expr;
     var tier = this.healthTier;
 
-    // pozadí rámečku
-    ctx.fillStyle = "#151517";
-    ctx.fillRect(0, 0, 100, 100);
+    if (!opts.frameless) {
+      ctx.fillStyle = "#151517";
+      ctx.fillRect(0, 0, 100, 100);
+    }
 
     // hlava
     ctx.fillStyle = tier === 2 ? "#d9a173" : "#e8b98a";
@@ -175,8 +178,10 @@
     }
 
     // rámeček
-    ctx.strokeStyle = "#000"; ctx.lineWidth = 3; ctx.strokeRect(1.5, 1.5, 97, 97);
-    ctx.strokeStyle = "#4c4c55"; ctx.lineWidth = 1.5; ctx.strokeRect(4, 4, 92, 92);
+    if (!opts.frameless) {
+      ctx.strokeStyle = "#000"; ctx.lineWidth = 3; ctx.strokeRect(1.5, 1.5, 97, 97);
+      ctx.strokeStyle = "#4c4c55"; ctx.lineWidth = 1.5; ctx.strokeRect(4, 4, 92, 92);
+    }
 
     ctx.restore();
   };

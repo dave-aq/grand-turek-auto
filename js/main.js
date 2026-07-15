@@ -54,6 +54,7 @@
     if (e.code === "KeyM") audio.toggleMute();
     if (e.code === "Enter" && state === "menu") start();
     if (e.code === "KeyR" && state !== "menu") restart();
+    if (e.code === "Escape") location.href = "index.html";
   });
   window.addEventListener("keyup", function (e) {
     if (e.code in KEYMAP) input[KEYMAP[e.code]] = false;

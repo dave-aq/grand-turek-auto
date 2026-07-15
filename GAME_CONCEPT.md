@@ -123,6 +123,10 @@ zobrazení (~600 ms), bolest přerušuje vše (jako v Doomu).
 
 ## 12. Koncept B — „STUNTS mód": first-person kokpit 🪞
 
+> **Stav:** prototyp postaven (`stunts.html` + `js/stunts.js`) — pseudo-3D
+> silnice se zatáčkami a kopci, provoz, kokpit s volantem a budíky, grimasy
+> ve zpětném zrcátku (sdílený `face.js`). Výběr konceptu je v úvodním menu.
+
 Druhá varianta inspirovaná DOS klasikou **Stunts (1990)**: pohled z kokpitu,
 vidět je volant, palubní deska a **zpětné zrcátko, ve kterém sedí řidičova tvář
 a šklebí se** — Turkocam přesunutý z Doom panelu do zrcátka. Tím se z HUD prvku
