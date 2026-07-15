@@ -1,0 +1,113 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background: #101014;
+  color: #eee;
+  font-family: "Arial Narrow", Arial, sans-serif;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#game-wrap {
+  position: relative;
+}
+
+#game {
+  display: block;
+  background: #202028;
+  image-rendering: pixelated;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  background: rgba(12, 12, 18, 0.88);
+  padding: 24px;
+}
+
+.overlay.hidden { display: none; }
+
+.overlay h1 {
+  font-size: 56px;
+  line-height: 0.95;
+  letter-spacing: 2px;
+  color: #ffd23f;
+  text-shadow: 4px 4px 0 #a1121a, 7px 7px 0 #000;
+}
+
+.tagline { font-style: italic; color: #bbb; }
+
+.controls p, .rules { font-size: 15px; line-height: 1.5; color: #ddd; }
+
+.rules { color: #ffb84d; }
+
+button {
+  font: bold 20px "Arial Narrow", Arial, sans-serif;
+  letter-spacing: 1px;
+  padding: 12px 28px;
+  border: 3px solid #000;
+  border-radius: 6px;
+  background: #ffd23f;
+  color: #1a1a1a;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 #000;
+}
+button:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 #000; }
+button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+
+.disclaimer {
+  font-size: 11px;
+  color: #888;
+  max-width: 340px;
+  line-height: 1.4;
+}
+
+/* Game-over newspaper */
+.newspaper {
+  background: #f4ecd8;
+  color: #17130c;
+  width: 360px;
+  padding: 16px 18px 20px;
+  border: 2px solid #17130c;
+  box-shadow: 6px 6px 0 #000;
+  transform: rotate(-1.5deg);
+}
+
+.np-head {
+  font-size: 40px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  border-bottom: 3px double #17130c;
+  padding-bottom: 4px;
+}
+
+.np-date {
+  font-size: 11px;
+  border-bottom: 1px solid #17130c;
+  padding: 3px 0 5px;
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+
+.newspaper h2 {
+  font-size: 27px;
+  line-height: 1.05;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+#np-stats { font-size: 15px; line-height: 1.55; }
+
+.np-best { margin-top: 8px; font-weight: bold; font-size: 14px; }
