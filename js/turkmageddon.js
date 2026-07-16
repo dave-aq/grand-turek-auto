@@ -47,6 +47,7 @@
 
   var segments = [], N = 0, trackLen = 0;
   var gantries = [], gantryBySeg = {};
+  var mostarnas = [];
 
   function yAt(i) {
     var k = (i % N) / N;
@@ -81,6 +82,7 @@
       segments.push({
         index: i, curve: curveArr[i], clip: H,
         cross: false, zebra: false, bldg: null,
+        most: false, mostBldg: false,
         p1: { world: { x: 0, y: yAt(i), z: i * SEG_L }, camera: {}, screen: {} },
         p2: { world: { x: 0, y: yAt(i + 1), z: (i + 1) * SEG_L }, camera: {}, screen: {} }
       });
@@ -108,10 +110,25 @@
       }
     }
 
-    // domy podél silnice (mimo křižovatky)
+    // moštárny (kauza Dubeč: garáž s razítkem moštárny) — opravny karoserie
+    var m = 150;
+    while (m < N - 80) {
+      var zoneOk = true;
+      for (var zc = m - 2; zc <= m + 14; zc++) {
+        if (segments[(zc + N) % N].cross) { zoneOk = false; break; }
+      }
+      if (!zoneOk) { m += 30; continue; }
+      var zone = { start: m, end: m + 11, midZ: (m + 5) * SEG_L, used: false };
+      mostarnas.push(zone);
+      for (var zs = zone.start; zs <= zone.end; zs++) segments[zs].most = true;
+      segments[m + 5].mostBldg = true;
+      m += 300 + Math.floor(Math.random() * 160);
+    }
+
+    // domy podél silnice (mimo křižovatky a moštárny)
     for (var bi = 0; bi < N; bi += 4) {
       var sb = segments[bi];
-      if (sb.cross) continue;
+      if (sb.cross || sb.most) continue;
       var hsh = Math.abs(Math.sin(bi * 12.9898) * 43758.5453) % 1;
       sb.bldg = {
         side: Math.floor(bi / 4) % 2 === 0 ? -1 : 1,
@@ -156,6 +173,7 @@
     floats = []; sparks = []; cracks = []; banners = [];
     shake = 0; rageCd = 0; mtOff = 0;
     flowActive = false; flowOstrava = false; flowTotal = 0; flowCarry = 0;
+    for (var z = 0; z < mostarnas.length; z++) mostarnas[z].used = false;
     over = false;
     face.reset();
     cars = [];
@@ -305,6 +323,26 @@
           audio.ding();
           addFloat(W / 2, H * 0.4, "Na červenou! +200", "#ff5d5d");
         }
+      }
+    }
+
+    // --- moštárna: zpomal pod 100, zajeď doprava a nech si opravit auto ---
+    var playerSeg = Math.floor(((position + PLAYER_Z) % trackLen) / SEG_L) % N;
+    for (var mz = 0; mz < mostarnas.length; mz++) {
+      var zone = mostarnas[mz];
+      var relZ = (zone.midZ - position + trackLen) % trackLen;
+      if (zone.used && relZ > 60 * SEG_L && relZ < trackLen / 2) zone.used = false;
+      if (!zone.used && health < 100 && playerX > 0.8 && speed < 100 &&
+          playerSeg >= zone.start && playerSeg <= zone.end) {
+        zone.used = true;
+        var heal = Math.min(50, 100 - health);
+        health += heal;
+        lastTier = health > 66 ? 0 : health > 33 ? 1 : 2;
+        cracks = [];                       // čelní sklo jako nové
+        face.trigger("kill");
+        audio.ding();
+        addBanner("PRAVIDLA MOŠTÁRNY!", "#7dff6e", 36, 2.4, 148, false);
+        addFloat(W / 2, H * 0.5, "+" + heal + " karoserie · razítko dodatečně", "#7dff6e");
       }
     }
 
@@ -536,6 +574,7 @@
     for (var m = DRAW_DIST - 1; m >= 1; m--) {
       var sg = segments[(base.index + m) % N];
       if (sg.bldg) drawBuilding(sg);
+      if (sg.mostBldg) drawMostarna(sg);
       var ga = gantryBySeg[sg.index];
       if (ga) drawGantry(sg, ga);
       var arr = buckets[sg.index];
@@ -731,6 +770,12 @@
            alt ? "#d84a4a" : "#e8e8e0");
     }
 
+    // vjezd k moštárně (udusaná plocha napravo od silnice)
+    if (seg.most) {
+      poly(p1.x + p1.w * 0.98, p1.y, p1.x + p1.w * 1.75, p1.y,
+           p2.x + p2.w * 1.75, p2.y, p2.x + p2.w * 0.98, p2.y, "#b9ad8e");
+    }
+
     // asfalt
     poly(p1.x - p1.w, p1.y, p1.x + p1.w, p1.y,
          p2.x + p2.w, p2.y, p2.x - p2.w, p2.y,
@@ -800,6 +845,60 @@
                        bw2 * 0.13, Math.max(1.5, u * 100));
         }
       }
+    }
+    ctx.restore();
+  }
+
+  // moštárna — „rozhodně ne garáž": vrata na dva jaguáry a cedule
+  function drawMostarna(seg) {
+    var p = seg.p1.screen;
+    if (p.w <= 0) return;
+    var u = p.scale * (W / 2);
+    var bw2 = u * 1500, bh2 = u * 620;
+    if (bw2 < 4) return;
+    var x = p.x + p.w * 2.45;
+
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, W, seg.clip); ctx.clip();
+    ctx.globalAlpha = Math.max(0.15, seg.fog);
+    // zeď
+    ctx.fillStyle = "#9b8f78";
+    ctx.fillRect(x - bw2 / 2, p.y - bh2, bw2, bh2);
+    // střecha
+    ctx.fillStyle = "#6e6152";
+    ctx.fillRect(x - bw2 * 0.54, p.y - bh2 - u * 90, bw2 * 1.08, u * 100);
+    // dvoje garážová vrata s lamelami
+    var gw = bw2 * 0.34, gh = bh2 * 0.62;
+    for (var side = -1; side <= 1; side += 2) {
+      var gx = x + side * bw2 * 0.22 - gw / 2;
+      ctx.fillStyle = "#4c4a44";
+      ctx.fillRect(gx, p.y - gh, gw, gh);
+      ctx.strokeStyle = "#3a3833";
+      ctx.lineWidth = Math.max(1, u * 12);
+      for (var l2 = 1; l2 < 4; l2++) {
+        line(gx, p.y - gh + gh * l2 / 4, gx + gw, p.y - gh + gh * l2 / 4);
+      }
+    }
+    // cedule nad střechou
+    var sw = bw2 * 0.7, sh = u * 210;
+    if (sh > 7) {
+      var sx = x - sw / 2, sy = p.y - bh2 - u * 70 - sh;
+      ctx.fillStyle = "#f2ead6";
+      ctx.fillRect(sx, sy, sw, sh);
+      ctx.strokeStyle = "#6e2a1a";
+      ctx.lineWidth = Math.max(1.5, u * 16);
+      ctx.strokeRect(sx, sy, sw, sh);
+      ctx.fillStyle = "#a1121a";
+      ctx.textAlign = "center";
+      ctx.font = "bold " + sh * 0.46 + "px Arial";
+      ctx.fillText("MOŠTÁRNA", x + sh * 0.12, sy + sh * 0.55);
+      ctx.fillStyle = "#6b6257";
+      ctx.font = "italic " + sh * 0.2 + "px Arial";
+      ctx.fillText("(rozhodně ne garáž)", x, sy + sh * 0.85);
+      // jablko
+      circle(sx + sh * 0.32, sy + sh * 0.42, sh * 0.16, "#c0392b");
+      ctx.fillStyle = "#4a7a3a";
+      ctx.fillRect(sx + sh * 0.29, sy + sh * 0.18, sh * 0.07, sh * 0.12);
     }
     ctx.restore();
   }
@@ -1299,6 +1398,14 @@
     if (e.code === "KeyM") audio.toggleMute();
     if (e.code === "Enter" && state === "menu") start();
     if (e.code === "KeyR" && state !== "menu") restart();
+    if (e.code === "Escape") {
+      if (state === "playing") {
+        state = "paused";
+        audio.setEngine(0, false);
+      } else if (state === "paused") {
+        state = "playing";
+      }
+    }
   });
   window.addEventListener("keyup", function (e) {
     if (e.code in KEYMAP) input[KEYMAP[e.code]] = false;
@@ -1338,7 +1445,11 @@
   window.__gtaDebug = {
     addBanner: addBanner,
     face: face,
-    boost: function (v) { speed = Math.min(MAXS, Math.max(0, v)); }
+    boost: function (v) { speed = Math.min(MAXS, Math.max(0, v)); },
+    damage: function (n) { health = Math.max(1, health - n); },
+    warp: function (segIdx) { position = ((segIdx % N) + N) % N * SEG_L; },
+    zones: function () { return mostarnas.map(function (z) { return z.start; }); },
+    stats: function () { return { speed: speed, health: health, score: score, x: playerX }; }
   };
 
   var last = performance.now();
@@ -1349,14 +1460,33 @@
     if (state === "playing") {
       update(dt);
       if (over) showGameOver();
-    } else {
+    } else if (state !== "paused") {
       face.update(dt, { health: health, sunglasses: false });
       updateBanners(dt);
     }
 
     ctx.clearRect(0, 0, W, H);
     render();
+    if (state === "paused") drawPause();
     requestAnimationFrame(frame);
+  }
+
+  function drawPause() {
+    ctx.fillStyle = "rgba(8,8,12,0.55)";
+    ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = "center";
+    ctx.lineJoin = "round";
+    ctx.font = "bold 48px Arial";
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = "#000";
+    ctx.strokeText("PAUZA", W / 2, 210);
+    ctx.fillStyle = "#ffd23f";
+    ctx.fillText("PAUZA", W / 2, 210);
+    ctx.font = "bold 16px Arial";
+    ctx.lineWidth = 4;
+    ctx.strokeText("Esc — pokračovat  ·  R — restart", W / 2, 244);
+    ctx.fillStyle = "#e8e8e8";
+    ctx.fillText("Esc — pokračovat  ·  R — restart", W / 2, 244);
   }
   requestAnimationFrame(frame);
 })();

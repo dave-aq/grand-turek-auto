@@ -28,6 +28,7 @@ Hra je statická, takže funguje i na GitHub Pages
 | ↓ nebo S | brzda |
 | M | zvuk zap/vyp |
 | R | restart |
+| Esc | pauza |
 
 ## Pravidla
 
@@ -44,6 +45,9 @@ Hra je statická, takže funguje i na GitHub Pages
 - **Sanitkám se vyhýbej** — −500 hlasů a krvavý titulek přes obrazovku.
 - Skoro zničené auto hlásí **DOJEZDOVOU TÍSEŇ**; hra končí, když je
   karoserie na šrot.
+- Opravit karoserii jde v **MOŠTÁRNĚ** („rozhodně ne garáž") u silnice:
+  zpomal pod 100 km/h a zajeď doprava na vjezd — +50 karoserie
+  a razítko dodatečně.
 
 ## Vlastní obličej (AI pixel art)
 
