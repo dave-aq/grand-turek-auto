@@ -80,6 +80,7 @@
     for (var i = 0; i < N; i++) {
       segments.push({
         index: i, curve: curveArr[i], clip: H,
+        cross: false, zebra: false, bldg: null,
         p1: { world: { x: 0, y: yAt(i), z: i * SEG_L }, camera: {}, screen: {} },
         p2: { world: { x: 0, y: yAt(i + 1), z: (i + 1) * SEG_L }, camera: {}, screen: {} }
       });
@@ -96,17 +97,41 @@
       gantryBySeg[g] = ga;
       g += 260 + Math.floor(Math.random() * 180);
     }
+
+    // křižovatky kolem semaforů: příčná ulice + přechod pro chodce
+    for (var gi = 0; gi < gantries.length; gi++) {
+      var gs = Math.floor(gantries[gi].z / SEG_L);
+      for (var d = -8; d <= 8; d++) {
+        var sIdx = (gs + d + N) % N;
+        segments[sIdx].cross = true;
+        if (d === -3 || d === -4) segments[sIdx].zebra = true;
+      }
+    }
+
+    // domy podél silnice (mimo křižovatky)
+    for (var bi = 0; bi < N; bi += 4) {
+      var sb = segments[bi];
+      if (sb.cross) continue;
+      var hsh = Math.abs(Math.sin(bi * 12.9898) * 43758.5453) % 1;
+      sb.bldg = {
+        side: Math.floor(bi / 4) % 2 === 0 ? -1 : 1,
+        h: 900 + hsh * 1700,
+        color: BLDG_COLORS[Math.floor(hsh * BLDG_COLORS.length)]
+      };
+    }
   }
+
+  var BLDG_COLORS = ["#6e7681", "#7a7066", "#5f6a74", "#857e6f", "#5d675f"];
 
   function findSegment(z) {
     return segments[Math.floor(z / SEG_L) % N];
   }
 
-  // 7,7s cyklus: zelená 3 s, oranžová 1,2 s, červená 3,5 s
+  // 8s cyklus: zelená 2 s (25 %), oranžová 2 s (25 %), červená 4 s (50 %)
   function lightState(phase) {
-    var t = phase % 7.7;
-    if (t < 3) return "green";
-    if (t < 4.2) return "orange";
+    var t = phase % 8;
+    if (t < 2) return "green";
+    if (t < 4) return "orange";
     return "red";
   }
 
@@ -181,7 +206,7 @@
     var dx = dt * 1.8 * speedPct;
     playerX += steer * dx;
     playerX -= dx * speedPct * base.curve * CENTRIFUGAL;
-    playerX = Math.max(-2.1, Math.min(2.1, playerX));
+    playerX = Math.max(-1.15, Math.min(1.15, playerX));   // městský obrubník
     wheelAngle += (steer * 0.85 - wheelAngle) * Math.min(1, 10 * dt);
 
     if (offroad && speed > 40 && rageCd <= 0) {
@@ -298,7 +323,8 @@
     var fx = centerXOf(c), fy = H * 0.55;
     spawnSparks(fx, fy);
 
-    var dmg = (5 + relKmh * 0.14) * (c.type.tough || 1);
+    // hranatá legenda má pořádné auto — vydrží řádově víc ran
+    var dmg = (3 + relKmh * 0.08) * (c.type.tough || 1);
 
     if (c.type.ambulance) {
       dmg *= 1.4;
@@ -482,6 +508,7 @@
     }
     for (var m = DRAW_DIST - 1; m >= 1; m--) {
       var sg = segments[(base.index + m) % N];
+      if (sg.bldg) drawBuilding(sg);
       var ga = gantryBySeg[sg.index];
       if (ga) drawGantry(sg, ga);
       var arr = buckets[sg.index];
@@ -529,48 +556,73 @@
     ctx.fillStyle = "rgba(255,240,180,0.25)";
     ctx.beginPath(); ctx.arc(500, 62, 44, 0, Math.PI * 2); ctx.fill();
 
-    // hory (parallax podle zatáček)
+    // městské panorama — dvě vrstvy siluet věžáků (parallax podle zatáček)
     var hy = H * 0.45;
-    ctx.fillStyle = "#3d5a52";
-    ctx.beginPath();
-    ctx.moveTo(0, hy + 40);
-    for (var px = 0; px <= W; px += 8) {
-      var yy = hy - Math.sin(px * 0.012 + mtOff) * 20 - Math.sin(px * 0.027 + mtOff * 1.7) * 10;
-      ctx.lineTo(px, yy);
+    skylineLayer(hy + 4, 34, 6, "#5a6472", false);
+    skylineLayer(hy + 16, 28, 11, "#3c4550", true);
+    ctx.fillStyle = "rgba(207,230,242,0.28)";   // smogový opar
+    ctx.fillRect(0, hy - 52, W, 70);
+  }
+
+  function skylineLayer(baseY, bw, speedK, color, windows) {
+    var sc = mtOff * speedK;
+    var first = Math.floor(sc / bw);
+    var shift = sc - first * bw;
+    for (var i = -1; i <= W / bw + 1; i++) {
+      var col = first + i;
+      var hsh = Math.abs(Math.sin(col * 12.9898) * 43758.5453) % 1;
+      var bh2 = 16 + hsh * 44;
+      var bx = i * bw - shift;
+      ctx.fillStyle = color;
+      ctx.fillRect(bx, baseY - bh2, bw - 3, bh2 + 18);
+      if (windows) {
+        ctx.fillStyle = "rgba(255,226,140,0.75)";
+        for (var wy = 0; wy < 3; wy++) {
+          for (var wx = 0; wx < 2; wx++) {
+            if ((Math.floor(hsh * 997) + wy * 3 + wx * 7 + col) % 3 === 0) {
+              ctx.fillRect(bx + 5 + wx * 10, baseY - bh2 + 6 + wy * 10, 3, 4);
+            }
+          }
+        }
+      }
     }
-    ctx.lineTo(W, hy + 60); ctx.lineTo(0, hy + 60);
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle = "#4c6e63";
-    ctx.beginPath();
-    ctx.moveTo(0, hy + 60);
-    for (var px2 = 0; px2 <= W; px2 += 8) {
-      var y2 = hy + 16 - Math.sin(px2 * 0.02 + mtOff * 0.6 + 2) * 12;
-      ctx.lineTo(px2, y2);
-    }
-    ctx.lineTo(W, hy + 60); ctx.lineTo(0, hy + 60);
-    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = color;
+    ctx.fillRect(0, baseY + 14, W, 8);
   }
 
   function renderSegment(seg) {
     var p1 = seg.p1.screen, p2 = seg.p2.screen;
     var alt = Math.floor(seg.index / 3) % 2;
 
-    // tráva
-    ctx.fillStyle = alt ? "#3f7a37" : "#376c30";
+    // okolí: chodníky, na křižovatce asfalt příčné ulice přes celou šíři
+    ctx.fillStyle = seg.cross ? "#46464e" : (alt ? "#84898f" : "#7b8086");
     ctx.fillRect(0, p2.y, W, p1.y - p2.y);
 
-    // krajnice (červenobílá)
-    poly(p1.x - p1.w * 1.15, p1.y, p1.x + p1.w * 1.15, p1.y,
-         p2.x + p2.w * 1.15, p2.y, p2.x - p2.w * 1.15, p2.y,
-         alt ? "#d84a4a" : "#e8e8e0");
+    // obrubník (mimo křižovatku)
+    if (!seg.cross) {
+      poly(p1.x - p1.w * 1.15, p1.y, p1.x + p1.w * 1.15, p1.y,
+           p2.x + p2.w * 1.15, p2.y, p2.x - p2.w * 1.15, p2.y,
+           alt ? "#d84a4a" : "#e8e8e0");
+    }
 
     // asfalt
     poly(p1.x - p1.w, p1.y, p1.x + p1.w, p1.y,
          p2.x + p2.w, p2.y, p2.x - p2.w, p2.y,
          alt ? "#55555e" : "#50505a");
 
-    // dělicí čáry (přerušované)
-    if (alt) {
+    // přechod pro chodce před semaforem
+    if (seg.zebra) {
+      for (var zi = 0; zi < 9; zi += 2) {
+        var t0 = zi / 9, t1 = (zi + 1) / 9;
+        poly(lerp(p1.x - p1.w, p1.x + p1.w, t0), p1.y,
+             lerp(p1.x - p1.w, p1.x + p1.w, t1), p1.y,
+             lerp(p2.x - p2.w, p2.x + p2.w, t1), p2.y,
+             lerp(p2.x - p2.w, p2.x + p2.w, t0), p2.y, "#e8e8e0");
+      }
+    }
+
+    // dělicí čáry (přerušované, mimo křižovatku)
+    if (alt && !seg.cross) {
       var lw1 = p1.w * 0.018, lw2 = p2.w * 0.018;
       for (var l = -1; l <= 1; l += 2) {
         var c1 = p1.x + p1.w * (l / 3), c2 = p2.x + p2.w * (l / 3);
@@ -592,6 +644,38 @@
     ctx.beginPath();
     ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.lineTo(x4, y4);
     ctx.closePath(); ctx.fill();
+  }
+
+  // dům podél silnice — fasáda s okny, mizí v oparu
+  function drawBuilding(seg) {
+    var b = seg.bldg;
+    var p = seg.p1.screen;
+    if (p.w <= 0) return;
+    var u = p.scale * (W / 2);
+    var bw2 = u * 780, bh2 = u * b.h;
+    if (bw2 < 3) return;
+    var x = p.x + p.w * b.side * 1.95;
+
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, W, seg.clip); ctx.clip();
+    ctx.globalAlpha = Math.max(0.15, seg.fog);
+    ctx.fillStyle = b.color;
+    ctx.fillRect(x - bw2 / 2, p.y - bh2, bw2, bh2);
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    ctx.fillRect(x - bw2 / 2, p.y - bh2, bw2, Math.max(1.5, u * 60));
+    if (bw2 > 16) {
+      ctx.fillStyle = "rgba(255,226,140,0.55)";
+      var rows = Math.min(7, Math.floor(bh2 / (u * 300)) + 2);
+      for (var wy = 0; wy < rows; wy++) {
+        for (var wx = 0; wx < 3; wx++) {
+          if ((seg.index + wy * 3 + wx) % 3 === 0) continue;
+          ctx.fillRect(x - bw2 / 2 + bw2 * (0.16 + wx * 0.28),
+                       p.y - bh2 + bh2 * (0.1 + wy * 0.82 / rows),
+                       bw2 * 0.13, Math.max(1.5, u * 100));
+        }
+      }
+    }
+    ctx.restore();
   }
 
   function drawGantry(seg, ga) {

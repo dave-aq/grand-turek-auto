@@ -21,6 +21,8 @@
     { p: 0.10, name: "sanitka",     votes: 0,   color: "#f2f2f2", roof: "#e0e0e0", w: 36, l: 68, ambulance: true }
   ];
 
+  var BLDG_COLORS = ["#6e7681", "#7a7066", "#5f6a74", "#857e6f", "#5d675f"];
+
   function pickType() {
     var r = Math.random(), acc = 0;
     for (var i = 0; i < CAR_TYPES.length; i++) {
@@ -53,6 +55,7 @@
     this.spawnTimer = 1.2;
     this.gantryTimer = 6;
     this.laneOffset = 0;
+    this.cityScroll = 0;
     this.shake = 0;
     this.rageCooldown = 0;
     this.over = false;
@@ -87,7 +90,8 @@
     p.x += p.vx * dt;
 
     // krajnice: tvrdý okraj kousek za trávou
-    var minX = ROAD_X - 24 + p.halfW, maxX = ROAD_X + ROAD_W + 24 - p.halfW;
+    // městský obrubník — jen kousek za okraj vozovky
+    var minX = ROAD_X - 10 + p.halfW, maxX = ROAD_X + ROAD_W + 10 - p.halfW;
     if (p.x < minX || p.x > maxX) {
       p.x = Math.max(minX, Math.min(maxX, p.x));
       p.vx = 0;
@@ -102,6 +106,7 @@
     var scroll = p.speed * K;
     this.distance += (p.speed / 3.6) * dt;
     this.laneOffset = (this.laneOffset + scroll * dt) % 60;
+    this.cityScroll = (this.cityScroll + scroll * dt) % 96000;
 
     // --- kombo ---
     if (this.comboTimer > 0) {
@@ -250,7 +255,8 @@
     this.shake = Math.max(this.shake, 0.25 + rel / 500);
     this.spawnSparks(c.x, c.y - 20);
 
-    var dmg = (5 + rel * 0.14) * (c.type.tough || 1);
+    // hranatá legenda má pořádné auto — vydrží řádově víc ran
+    var dmg = (3 + rel * 0.08) * (c.type.tough || 1);
 
     if (c.type.ambulance) {
       dmg *= 1.4;
@@ -354,15 +360,19 @@
   };
 
   Game.prototype.drawRoad = function (ctx) {
-    // tráva s pruhy pro pocit rychlosti
-    ctx.fillStyle = "#3f7a37";
+    // chodníky po stranách
+    ctx.fillStyle = "#7b8086";
     ctx.fillRect(0, 0, W, H - PANEL_H);
-    ctx.fillStyle = "#376c30";
+    // spáry v dlažbě pro pocit rychlosti
+    ctx.fillStyle = "#73787e";
     var stripe = 60;
     for (var y = -stripe + this.laneOffset; y < H; y += stripe * 2) {
       ctx.fillRect(0, y, ROAD_X - 10, stripe);
       ctx.fillRect(ROAD_X + ROAD_W + 10, y, W - ROAD_X - ROAD_W - 10, stripe);
     }
+    // fasády domů podél ulice
+    this.drawBuildings(ctx, true);
+    this.drawBuildings(ctx, false);
 
     // asfalt + krajnice
     ctx.fillStyle = "#43434b";
@@ -383,8 +393,41 @@
     }
   };
 
+  Game.prototype.drawBuildings = function (ctx, left) {
+    var BH = 96;
+    var jMax = Math.floor(this.cityScroll / BH) + 1;
+    for (var j = jMax; j > jMax - 10; j--) {
+      var y = this.cityScroll - j * BH;
+      if (y < -BH || y > H - PANEL_H) continue;
+      var hsh = Math.abs(Math.sin((j * 2 + (left ? 0 : 1)) * 12.9898) * 43758.5453) % 1;
+      var bw = 52 + hsh * 16;
+      var x = left ? 0 : W - bw;
+      ctx.fillStyle = BLDG_COLORS[Math.floor(hsh * BLDG_COLORS.length)];
+      ctx.fillRect(x, y + 3, bw, BH - 6);
+      // okna — tmavá mřížka, některá svítí
+      for (var r = 0; r < 4; r++) {
+        for (var c = 0; c < 3; c++) {
+          ctx.fillStyle = (j * 7 + r * 3 + c) % 3 === 0 ? "#f4d98a" : "#33383e";
+          ctx.fillRect(x + 7 + c * ((bw - 14) / 3), y + 12 + r * 20, 9, 11);
+        }
+      }
+    }
+  };
+
   Game.prototype.drawGantry = function (ctx, ga) {
     var y = ga.y;
+
+    // křižovatka: příčná ulice za semaforem
+    ctx.fillStyle = "#46464e";
+    ctx.fillRect(0, y - 118, W, 92);
+    ctx.fillStyle = "#d8d8d0";
+    for (var xx = 20; xx < W; xx += 60) ctx.fillRect(xx, y - 74, 30, 4);
+    // přechod pro chodce
+    ctx.fillStyle = "#e8e8e0";
+    for (var zx = ROAD_X + 8; zx < ROAD_X + ROAD_W - 8; zx += 22) {
+      ctx.fillRect(zx, y - 26, 13, 14);
+    }
+
     // stopčára
     ctx.fillStyle = "#e8e8e0";
     ctx.fillRect(ROAD_X, y + 16, ROAD_W, 8);
@@ -537,11 +580,11 @@
 
   /* --------------------------- pomocníci --------------------------- */
 
-  // 7,7s cyklus: zelená 3 s, oranžová 1,2 s, červená 3,5 s
+  // 8s cyklus: zelená 2 s (25 %), oranžová 2 s (25 %), červená 4 s (50 %)
   function lightState(phase) {
-    var t = phase % 7.7;
-    if (t < 3) return "green";
-    if (t < 4.2) return "orange";
+    var t = phase % 8;
+    if (t < 2) return "green";
+    if (t < 4) return "orange";
     return "red";
   }
 
