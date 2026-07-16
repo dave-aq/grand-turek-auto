@@ -162,7 +162,7 @@
   var face = new GTA.FaceCam();
   var audio = new GTA.AudioSys();
   var state = "menu";  // menu | playing | over
-  var input = { left: false, right: false, up: false, down: false };
+  var input = { left: false, right: false, up: false, down: false, steerX: 0 };
 
   var position, prevPos, speed, playerX, wheelAngle;
   var health, lastTier, score, best, combo, comboTimer, wrecksN, distanceM, timeT;
@@ -212,7 +212,8 @@
   function update(dt) {
     timeT += dt;
 
-    var steer = (input.left ? -1 : 0) + (input.right ? 1 : 0);
+    var steer = (input.left ? -1 : 0) + (input.right ? 1 : 0) + (input.steerX || 0);
+    steer = Math.max(-1, Math.min(1, steer));
 
     if (input.up) speed += 60 * dt;
     else if (input.down) speed -= 125 * dt;
@@ -1473,31 +1474,74 @@
   document.getElementById("btn-start").addEventListener("click", start);
   document.getElementById("btn-restart").addEventListener("click", restart);
 
-  // dotykové ovládání pro telefony
+  // dotykové ovládání: plovoucí joystick — střed je tam, kde se hráč
+  // poprvé dotkl; posun prstu od středu = plyn/brzda (svisle, digitálně)
+  // a plynulé řízení (vodorovně)
   var isTouch = ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
   if (isTouch) document.body.classList.add("touch");
 
-  function bindHold(id, key) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener("pointerdown", function (e) {
-      e.preventDefault();
-      input[key] = true;
-      try { el.setPointerCapture(e.pointerId); } catch (err) { /* syntetické eventy */ }
-    });
-    function release() { input[key] = false; }
-    el.addEventListener("pointerup", release);
-    el.addEventListener("pointercancel", release);
-    el.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+  var JOY_DEAD = 18;    // mrtvá zóna (px plátna)
+  var JOY_RANGE = 70;   // vzdálenost pro plné zatočení
+  var joy = { active: false, id: null, cx: 0, cy: 0, x: 0, y: 0 };
+
+  function canvasPos(e) {
+    var r = canvas.getBoundingClientRect();
+    return {
+      x: (e.clientX - r.left) * (W / r.width),
+      y: (e.clientY - r.top) * (H / r.height)
+    };
   }
-  bindHold("t-left", "left");
-  bindHold("t-right", "right");
-  bindHold("t-gas", "up");
-  bindHold("t-brake", "down");
+
+  function joyApply() {
+    var dx = joy.x - joy.cx, dy = joy.y - joy.cy;
+    input.steerX = Math.abs(dx) > JOY_DEAD
+      ? Math.max(-1, Math.min(1, (dx - (dx > 0 ? JOY_DEAD : -JOY_DEAD)) / JOY_RANGE))
+      : 0;
+    input.up = dy < -JOY_DEAD;
+    input.down = dy > JOY_DEAD;
+  }
+
+  function joyRelease() {
+    joy.active = false;
+    joy.id = null;
+    input.steerX = 0;
+    input.up = false;
+    input.down = false;
+  }
+
+  if (isTouch) {
+    canvas.addEventListener("pointerdown", function (e) {
+      if (joy.active) return;              // druhý prst ignorujeme
+      e.preventDefault();
+      var p = canvasPos(e);
+      joy.active = true;
+      joy.id = e.pointerId;
+      joy.cx = p.x; joy.cy = p.y;
+      joy.x = p.x; joy.y = p.y;
+      joyApply();
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* syntetické eventy */ }
+    });
+    canvas.addEventListener("pointermove", function (e) {
+      if (!joy.active || e.pointerId !== joy.id) return;
+      e.preventDefault();
+      var p = canvasPos(e);
+      joy.x = p.x; joy.y = p.y;
+      joyApply();
+    });
+    canvas.addEventListener("pointerup", function (e) {
+      if (e.pointerId === joy.id) joyRelease();
+    });
+    canvas.addEventListener("pointercancel", function (e) {
+      if (e.pointerId === joy.id) joyRelease();
+    });
+    canvas.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+  }
+
   document.getElementById("t-pause").addEventListener("click", togglePause);
 
   function clearInput() {
     input.left = input.right = input.up = input.down = false;
+    input.steerX = 0;
   }
 
   function start() {
@@ -1555,8 +1599,31 @@
 
     ctx.clearRect(0, 0, W, H);
     render();
+    drawJoystick();
     if (state === "paused") drawPause();
     requestAnimationFrame(frame);
+  }
+
+  // kroužek v místě prvního dotyku + tečka pod prstem
+  function drawJoystick() {
+    if (!joy.active) return;
+    ctx.save();
+    ctx.strokeStyle = "#ffd23f";
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = 0.35;
+    ctx.beginPath(); ctx.arc(joy.cx, joy.cy, 46, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = 0.18;
+    ctx.beginPath(); ctx.arc(joy.cx, joy.cy, JOY_DEAD, 0, Math.PI * 2); ctx.stroke();
+    var dx = joy.x - joy.cx, dy = joy.y - joy.cy;
+    var d = Math.sqrt(dx * dx + dy * dy);
+    var lim = Math.min(d, 60);
+    var ang = Math.atan2(dy, dx);
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = "#ffd23f";
+    ctx.beginPath();
+    ctx.arc(joy.cx + Math.cos(ang) * lim, joy.cy + Math.sin(ang) * lim, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
   function drawPause() {

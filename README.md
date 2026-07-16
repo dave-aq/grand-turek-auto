@@ -30,8 +30,10 @@ Hra je statická, takže funguje i na GitHub Pages
 | R | restart |
 | Esc | pauza |
 
-Na dotykových zařízeních se automaticky zobrazí tlačítka:
-**◀ ▶** řízení (vlevo), **▲** plyn a **▼** brzda (vpravo), **❚❚** pauza.
+Na dotykových zařízeních se ovládá **plovoucím joystickem**: polož prst
+kamkoli na obraz hry (tam vznikne střed) a táhni — **nahoru** plyn,
+**do stran** plynulé řízení, **dolů** brzda; diagonála kombinuje obojí.
+Vpravo nahoře je **❚❚** pauza.
 
 ## Pravidla
 
