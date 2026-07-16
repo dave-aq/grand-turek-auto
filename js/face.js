@@ -1,20 +1,19 @@
 /* ============================================================
- * Turkocam — obličej ve stylu Doom HUD
- * Stavový automat grimas + procedurálně kreslená karikatura.
- * Modul je nezávislý na pohledu hry: v konceptu A se kreslí do
- * spodního panelu, v konceptu B (STUNTS FPV) do zpětného zrcátka.
+ * Turkocam — obličej ve stylu Doom HUD, pixel-art edice.
+ * Stavový automat grimas + pixelový sprite skládaný z mřížky
+ * a výměnných záplat (oči / obočí / ústa) podle výrazu.
+ * Modul je nezávislý na pohledu hry (panel i zpětné zrcátko).
+ * Vlastní PNG v assets/face/<stav>.png mají stále přednost.
  * ============================================================ */
 (function () {
   "use strict";
 
-  // Priorita událostí: vyšší číslo přebije nižší.
+  /* ---------------------- stavový automat ---------------------- */
+
   var PRIORITY = { ko: 100, pain: 80, panic: 70, kill: 50, redlight: 40, rage: 30 };
   var EXPR = { ko: "ko", pain: "pain", panic: "panic", kill: "grin", redlight: "wink", rage: "rage" };
   var DURATION = { ko: Infinity, pain: 0.7, panic: 1.6, kill: 0.9, redlight: 0.9, rage: 0.8 };
 
-  // Volitelný spritesheet: PNG v assets/face/<stav>.png nahradí vestavěnou
-  // kresbu daného stavu (např. AI pixel art). Chybějící soubory se tiše
-  // ignorují a dál se kreslí procedurální karikatura.
   var SPRITE_KEYS = ["neutral", "grin", "wink", "rage", "pain", "panic", "ko", "sunglasses"];
   var SPRITES = { tried: false, imgs: {} };
 
@@ -40,7 +39,7 @@
     this.t = 0;
     this.blinkAt = 2 + Math.random() * 2;
     this.blinking = 0;
-    this.healthTier = 0;   // 0 svěží, 1 potlučený, 2 na maděru
+    this.healthTier = 0;
     this.sunglasses = false;
   };
 
@@ -63,7 +62,6 @@
       this.expr = "neutral";
       this.exprPrio = 0;
     }
-    // Mrkání jen v klidu.
     if (this.expr === "neutral") {
       if (this.blinking > 0) {
         this.blinking -= dt;
@@ -76,9 +74,205 @@
     }
   };
 
-  /* --------- kreslení (souřadnice v prostoru 0..100, škáluje se) --------- */
+  /* ------------------------- pixel art ------------------------- */
 
-  // opts.frameless: bez pozadí a rámečku (např. ve zpětném zrcátku konceptu B)
+  var GW = 36, GH = 42;   // mřížka spritu
+
+  // palety: základ, vztek (rudá), potlučený (tier 2)
+  var PALETTES = {
+    base: {
+      H: "#d9a441", h: "#a87b2c", L: "#edc76f",
+      S: "#ecb489", s: "#cf9464", w: "#f6cf9f",
+      E: "#f2f2f2", I: "#4f7d9e", B: "#8a6430",
+      k: "#3a2e20", M: "#7c3428", T: "#ffffff",
+      N: "#243250", n: "#172138", C: "#eef0f2", P: "#e07a8a"
+    }
+  };
+  PALETTES.rage = Object.assign({}, PALETTES.base, {
+    S: "#e0573c", s: "#bc3e28", w: "#ef8461"
+  });
+  PALETTES.tier2 = Object.assign({}, PALETTES.base, {
+    S: "#d9a173", s: "#b97f52", w: "#e6b98d"
+  });
+
+  // základ hlavy: vlasy, tvář, uši, nos, krk, sako (bez očí/obočí/úst)
+  var BASE = [
+    "...........LHHHHHHHHh..............",
+    ".........LLHHHHHHHHHHHh............",
+    "........LHHHHhHHHHHHHHHHh..........",
+    ".......LHHHhHHHHHhHHHHHHHHh........",
+    "......LHHHhHHHHhHHHHHhHHHHHHh......",
+    "......HHHhHHHHhHHHHHhHHHHHHHHh.....",
+    ".....hHHhHHHHhHHHHHhHHHHHhHHHHh....",
+    ".....hHHhHHHhHHHHHhHHHHHhHHHHHh....",
+    ".....hHhHHHHhHHHHHHHHHhHHHHHHHh....",
+    ".....HhHHHHHHHHHHHHHHHHHHHHHHHh....",
+    ".....HHHHHHHHHHHHHHHHHHHHHHHHHh....",
+    ".....HHSSSSSSSSSSSSSSSSSSSSSHHh....",
+    ".....HSwSSSSSSSSSSSSSSSSSSSsSHh....",
+    ".....HSwwSSSSSSSSSSSSSSSSSSssHh....",
+    "....hHSwSSSSSSSSSSSSSSSSSSSssHh....",
+    "....hHSSSSSSSSSSSSSSSSSSSSSSsHh....",
+    "...sShSSSSSSSSSSSSSSSSSSSSSSshSs...",
+    "...sShSSSSSSSSSSSSSSSSSSSSSSshSs...",
+    "...sShSSSSSSSSSSSSSSSSSSSSSSshSs...",
+    "....ssSSSSSSSSSwSsSSSSSSSSSSsss....",
+    "....ssSSSSSSSSSwSsSSSSSSSSSSsss....",
+    ".....sSSSSSSSSSwSsSSSSSSSSSSs......",
+    ".....sSSsSSSSSSwSsSSSSSSsSSSs......",
+    ".....sSSsSSSSSSwSssSSSSSsSSSs......",
+    ".....sSSsSSSSSkssskSSSSSsSSSs......",
+    ".....sSSSsSSSSSSSSSSSSSsSSSSs......",
+    ".....sSSSsSSSSSSSSSSSSSsSSSSs......",
+    ".....sSSSSSSSSSSSSSSSSSSSSSSs......",
+    ".....sSSSSSSSSSSSSSSSSSSSSSSs......",
+    ".....sSSSSSSSSSSSSSSSSSSSSSSs......",
+    "......sSSSSSSSSSSSSSSSSSSSSs.......",
+    "......sSSSSSSSSssssSSSSSSSSs.......",
+    ".......sSSSSSSSSSSSSSSSSSSs........",
+    ".......ssSSSSSSSSSSSSSSSSss........",
+    "........sssSSSSSSSSSSSSsss.........",
+    "..........ssSSSSSSSSSSss...........",
+    "..........sSSSSSSSSSSSSs...........",
+    "....NN....sSSSSSSSSSSSSs....NN.....",
+    "..NNNNNN..sSSSSSSSSSSSSs..NNNNNN...",
+    ".NNNNNNNNNnSSSSSSSSSSSSnNNNNNNNN...",
+    "NNNNNNNNNNNnCCSSSSSSCCnNNNNNNNNNN..",
+    "NNNNNNNNNNNNnCCCCCCCCnNNNNNNNNNNNN."
+  ];
+
+  // záplaty výrazů (kreslí se přes základ, '.' = beze změny)
+  var PATCH = {
+    browsFlat:   { x: 9,  y: 14, rows: ["BBBBBB.....BBBBBB"] },
+    browsRaised: { x: 9,  y: 13, rows: ["BBBBBB.....BBBBBB"] },
+    browsRage:   { x: 8,  y: 12, rows: [
+      "Bk...............kB",
+      ".BBk...........kBB.",
+      "...BBk.......kBB...",
+      ".....Bk.....kB....."
+    ] },
+    browsPain:   { x: 9,  y: 13, rows: [
+      "..kBBB.....BBBk..",
+      "kBB...........BBk"
+    ] },
+    eyesOpen:    { x: 10, y: 16, rows: [
+      "kEEEEk...kEEEEk",
+      "kEIIEk...kEIIEk"
+    ] },
+    eyesClosed:  { x: 10, y: 17, rows: ["kkkkkk...kkkkkk"] },
+    eyesNarrow:  { x: 10, y: 17, rows: ["kEIIEk...kEIIEk"] },
+    eyesWide:    { x: 10, y: 15, rows: [
+      "kEEEEk...kEEEEk",
+      "kEIIEk...kEIIEk",
+      "kEEEEk...kEEEEk"
+    ] },
+    eyesSqueeze: { x: 10, y: 16, rows: [
+      "kk..kk...kk..kk",
+      "..kk.......kk.."
+    ] },
+    eyesX:       { x: 10, y: 15, rows: [
+      "k...k.....k...k",
+      ".k.k.......k.k.",
+      "..k.........k..",
+      ".k.k.......k.k.",
+      "k...k.....k...k"
+    ] },
+    winkEye:     { x: 10, y: 17, rows: ["kkkkkk"] },
+    winkOpen:    { x: 20, y: 16, rows: [
+      "kEEEEk",
+      "kEIIEk"
+    ] },
+    mouthSmirk:  { x: 13, y: 27, rows: [
+      ".........k",
+      "kkkkkkkkk.",
+      ".sssssss.."
+    ] },
+    mouthGrin:   { x: 11, y: 26, rows: [
+      ".kkkkkkkkkkkk.",
+      "kTTTTTTTTTTTTk",
+      "kTTTTTTTTTTTTk",
+      ".kkkkkkkkkkkk."
+    ] },
+    mouthRage:   { x: 11, y: 25, rows: [
+      ".kkkkkkkkkkkk.",
+      "kTTTTTTTTTTTTk",
+      "kMMMMMMMMMMMMk",
+      "kTTTTTTTTTTTTk",
+      ".kkkkkkkkkkkk."
+    ] },
+    mouthPain:   { x: 12, y: 27, rows: [
+      ".kkkkkkkkk.",
+      "kMMMMMMMMMk",
+      ".kkkkkkkkk."
+    ] },
+    mouthO:      { x: 15, y: 27, rows: [
+      ".kkk.",
+      "kMMMk",
+      ".kkk."
+    ] },
+    tongue:      { x: 17, y: 30, rows: ["PP", "PP"] }
+  };
+
+  var EXPR_PARTS = {
+    neutral: ["browsFlat", "eyesOpen", "mouthSmirk"],
+    grin:    ["browsRaised", "eyesOpen", "mouthGrin"],
+    wink:    ["browsFlat", "winkEye", "winkOpen", "mouthSmirk"],
+    rage:    ["browsRage", "eyesNarrow", "mouthRage"],
+    pain:    ["browsPain", "eyesSqueeze", "mouthPain"],
+    panic:   ["browsRaised", "eyesWide", "mouthO"],
+    ko:      ["eyesX", "mouthO", "tongue"]
+  };
+
+  var cache = {};
+
+  function buildCanvas(expr, blink, variant) {
+    var buf = [];
+    for (var r = 0; r < GH; r++) {
+      var row = (BASE[r] || "") + "....................................";
+      buf.push(row.slice(0, GW).split(""));
+    }
+    var parts = (EXPR_PARTS[expr] || EXPR_PARTS.neutral).slice();
+    if (blink && expr === "neutral") {
+      parts[parts.indexOf("eyesOpen")] = "eyesClosed";
+    }
+    for (var p = 0; p < parts.length; p++) {
+      var patch = PATCH[parts[p]];
+      if (!patch) continue;
+      for (var pr = 0; pr < patch.rows.length; pr++) {
+        var prow = patch.rows[pr];
+        for (var pc = 0; pc < prow.length; pc++) {
+          var ch = prow[pc];
+          if (ch === ".") continue;
+          var gy = patch.y + pr, gx = patch.x + pc;
+          if (gy >= 0 && gy < GH && gx >= 0 && gx < GW) buf[gy][gx] = ch;
+        }
+      }
+    }
+
+    var canvas = document.createElement("canvas");
+    canvas.width = GW;
+    canvas.height = GH;
+    var c = canvas.getContext("2d");
+    var pal = PALETTES[variant] || PALETTES.base;
+    for (var y = 0; y < GH; y++) {
+      for (var x = 0; x < GW; x++) {
+        var col = pal[buf[y][x]];
+        if (!col) continue;
+        c.fillStyle = col;
+        c.fillRect(x, y, 1, 1);
+      }
+    }
+    return canvas;
+  }
+
+  function getCanvas(expr, blink, variant) {
+    var key = expr + "|" + (blink ? 1 : 0) + "|" + variant;
+    if (!cache[key]) cache[key] = buildCanvas(expr, blink, variant);
+    return cache[key];
+  }
+
+  /* --------------------------- kreslení --------------------------- */
+
   FaceCam.prototype.draw = function (ctx, x, y, size, opts) {
     opts = opts || {};
     var u = size / 100;
@@ -94,118 +288,74 @@
       ctx.fillRect(0, 0, 100, 100);
     }
 
-    // vlastní sprite má přednost před kreslením
+    // vlastní PNG sprite má přednost
     var spriteKey = (this.sunglasses && e !== "ko") ? "sunglasses" : e;
-    var sprite = SPRITES.imgs[spriteKey] || (spriteKey === "sunglasses" ? SPRITES.imgs[e] : null);
-    if (sprite) {
-      var smoothing = ctx.imageSmoothingEnabled;
-      ctx.imageSmoothingEnabled = false;      // pixel art zůstane ostrý
-      ctx.drawImage(sprite, 0, 0, 100, 100);
+    var ext = SPRITES.imgs[spriteKey] || (spriteKey === "sunglasses" ? SPRITES.imgs[e] : null);
+    var smoothing = ctx.imageSmoothingEnabled;
+    if (ext) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(ext, 0, 0, 100, 100);
       ctx.imageSmoothingEnabled = smoothing;
-      if (!opts.frameless) {
-        ctx.strokeStyle = "#000"; ctx.lineWidth = 3; ctx.strokeRect(1.5, 1.5, 97, 97);
-        ctx.strokeStyle = "#4c4c55"; ctx.lineWidth = 1.5; ctx.strokeRect(4, 4, 92, 92);
-      }
+      drawFrame(ctx, opts);
       ctx.restore();
       return;
     }
 
-    // hlava — „hranatá legenda": jen rovné linie a ostré rohy
-    ctx.fillStyle = tier === 2 ? "#d9a173" : "#e8b98a";
-    // uši — hranaté
-    ctx.fillRect(10, 44, 8, 16);
-    ctx.fillRect(82, 44, 8, 16);
-    headPath(ctx);
-    ctx.fill();
-    // lícní kosti a čelist — sekané stíny
-    ctx.strokeStyle = "rgba(160,110,70,0.4)"; ctx.lineWidth = 1.6;
-    line(ctx, 23, 64, 31, 73);
-    line(ctx, 77, 64, 69, 73);
-    // rýha brady — rovná
-    ctx.strokeStyle = "rgba(160,110,70,0.5)";
-    line(ctx, 43, 86, 57, 86);
+    // pixelový sprite
+    var variant = e === "rage" ? "rage" : (tier === 2 ? "tier2" : "base");
+    var img = getCanvas(e, this.blinking > 0, variant);
+    var cell = 100 / GH;                       // výška mřížky = celý rám
+    var wPx = GW * cell;
+    var ox = (100 - wPx) / 2;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(img, 0, 0, GW, GH, ox, 0, wPx, 100);
+    ctx.imageSmoothingEnabled = smoothing;
 
-    // ruměnec vzteku — zrudne celá hranatá hlava
-    if (e === "rage") {
-      ctx.fillStyle = "rgba(210,40,20,0.38)";
-      headPath(ctx);
-      ctx.fill();
-    }
-
-    // vlasy — blond hranatý quiff sčesaný dozadu, zubatá linie vlasů
-    ctx.fillStyle = "#c9a25a";
-    ctx.beginPath();
-    ctx.moveTo(15, 27);
-    ctx.lineTo(11, 12);
-    ctx.lineTo(24, 0);       // quiff vysoko vpředu
-    ctx.lineTo(48, -2);
-    ctx.lineTo(76, 3);
-    ctx.lineTo(88, 14);
-    ctx.lineTo(85, 27);
-    ctx.lineTo(74, 20);      // zubatá linie vlasů
-    ctx.lineTo(60, 23);
-    ctx.lineTo(46, 20);
-    ctx.lineTo(32, 23);
-    ctx.lineTo(22, 19);
-    ctx.closePath();
-    ctx.fill();
-    // tmavší zástřih po stranách — ostré klíny
-    ctx.fillStyle = "#a9863f";
-    ctx.beginPath();
-    ctx.moveTo(15, 27); ctx.lineTo(11, 12); ctx.lineTo(21, 14); ctx.lineTo(20, 25);
-    ctx.closePath(); ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(85, 27); ctx.lineTo(88, 14); ctx.lineTo(79, 9); ctx.lineTo(80, 25);
-    ctx.closePath(); ctx.fill();
-    // prameny — rovné šikmé tahy směrem dozadu
-    ctx.strokeStyle = "rgba(240,216,150,0.6)";
-    ctx.lineWidth = 1.3;
-    line(ctx, 26, 16, 44, 1);
-    line(ctx, 36, 18, 56, 2);
-    line(ctx, 48, 18, 68, 4);
-    line(ctx, 60, 19, 78, 7);
+    /* -------- animované a stavové vrstvy nad pixel artem -------- */
 
     // modřiny podle zdraví
     if (tier >= 1) {
-      ctx.fillStyle = "rgba(110,50,140,0.5)";
-      ellipseRot(ctx, 68, 60, 6.5, 4, -0.5);
+      ctx.fillStyle = "rgba(110,50,140,0.55)";
+      ellipseRot(ctx, 66, 56, 5.5, 3.5, -0.5);
       ctx.strokeStyle = "#a1121a"; ctx.lineWidth = 1.4;
-      line(ctx, 30, 34, 37, 37); line(ctx, 32, 38, 38, 39);
+      line(ctx, 31, 33, 38, 36);
+      line(ctx, 33, 37, 39, 38);
     }
     if (tier >= 2) {
       ctx.fillStyle = "rgba(90,40,120,0.55)";
-      ellipseRot(ctx, 33, 61, 5.5, 3.5, 0.4);
-      ctx.fillStyle = "rgba(60,20,80,0.45)";
-      ellipse(ctx, 35, 49, 8, 4.5);           // monokl
-      // náplast
+      ellipseRot(ctx, 35, 60, 5, 3, 0.4);
+      ctx.fillStyle = "rgba(60,20,80,0.4)";
+      ellipseRot(ctx, 36, 48, 7, 3.5, 0);
       ctx.save();
-      ctx.translate(63, 32); ctx.rotate(0.5);
+      ctx.translate(63, 30); ctx.rotate(0.5);
       ctx.fillStyle = "#d8c9a3"; ctx.fillRect(-7, -2.6, 14, 5.2);
       ctx.fillStyle = "#c4b48d"; ctx.fillRect(-5.2, -2.6, 2, 5.2); ctx.fillRect(3.2, -2.6, 2, 5.2);
       ctx.restore();
     }
 
-    // oči / brýle
-    this.drawEyes(ctx, e);
-
-    // nos — výrazný, ostrý
-    ctx.strokeStyle = "#b07948"; ctx.lineWidth = 2.4; ctx.lineCap = "butt";
-    ctx.beginPath();
-    ctx.moveTo(50, 48);
-    ctx.lineTo(46, 61);
-    ctx.lineTo(54, 63);
-    ctx.stroke();
-    ctx.lineCap = "round";
-
-    // ústa
-    this.drawMouth(ctx, e);
+    // aviatorky při kombu
+    if (this.sunglasses && e !== "ko") {
+      ctx.fillStyle = "#17150f";
+      ctx.fillRect(30, 36, 15, 10);
+      ctx.fillRect(55, 36, 15, 10);
+      ctx.fillRect(32, 46, 11, 2);
+      ctx.fillRect(57, 46, 11, 2);
+      ctx.strokeStyle = "#c9a25a"; ctx.lineWidth = 1.6;
+      line(ctx, 45, 38, 55, 38);
+      line(ctx, 46, 41, 54, 41);
+      line(ctx, 13, 39, 30, 38);
+      line(ctx, 87, 39, 70, 38);
+      ctx.fillStyle = "rgba(255,255,255,0.35)";
+      ctx.fillRect(33, 38, 4, 2);
+      ctx.fillRect(58, 38, 4, 2);
+    }
 
     // pot při panice
     if (e === "panic") {
       var ph = (this.t * 2.2) % 1;
       ctx.fillStyle = "#7ec8ff";
-      drop(ctx, 78, 36 + ph * 16, 2.4);
-      drop(ctx, 23, 40 + ((ph + 0.45) % 1) * 14, 2);
+      drop(ctx, 79, 34 + ph * 16, 2.4);
+      drop(ctx, 21, 38 + ((ph + 0.45) % 1) * 14, 2);
     }
 
     // hvězdičky při KO
@@ -213,201 +363,27 @@
       ctx.fillStyle = "#ffd23f";
       for (var k = 0; k < 3; k++) {
         var ang = this.t * 2.4 + k * (Math.PI * 2 / 3);
-        star(ctx, 50 + Math.cos(ang) * 34, 22 + Math.sin(ang) * 9, 4.5, ang);
+        star(ctx, 50 + Math.cos(ang) * 34, 18 + Math.sin(ang) * 8, 4.5, ang);
       }
     }
 
-    // rámeček
-    if (!opts.frameless) {
-      ctx.strokeStyle = "#000"; ctx.lineWidth = 3; ctx.strokeRect(1.5, 1.5, 97, 97);
-      ctx.strokeStyle = "#4c4c55"; ctx.lineWidth = 1.5; ctx.strokeRect(4, 4, 92, 92);
-    }
-
+    drawFrame(ctx, opts);
     ctx.restore();
   };
 
-  FaceCam.prototype.drawEyes = function (ctx, e) {
-    if (this.sunglasses && e !== "ko") {
-      // Aviatorky při extázi z komba (jako na tiskovkách).
-      ctx.fillStyle = "#151312";
-      teardrop(ctx, 36, 45);
-      teardrop(ctx, 64, 45);
-      ctx.strokeStyle = "#c9a25a"; ctx.lineWidth = 1.6;
-      ctx.beginPath(); ctx.moveTo(44, 41); ctx.lineTo(56, 41); ctx.stroke();  // můstek
-      ctx.beginPath(); ctx.moveTo(45, 44); ctx.lineTo(55, 44); ctx.stroke();  // dvojitý
-      ctx.beginPath(); ctx.moveTo(18, 42); ctx.lineTo(27, 41); ctx.stroke();  // nožičky
-      ctx.beginPath(); ctx.moveTo(82, 42); ctx.lineTo(73, 41); ctx.stroke();
-      ctx.fillStyle = "rgba(255,255,255,0.35)";
-      ctx.fillRect(30, 43, 5, 1.8); ctx.fillRect(58, 43, 5, 1.8);
-      return;
-    }
-    var L = { x: 36, y: 45 }, R = { x: 64, y: 45 };
-    var openL = 1, openR = 1;
-    var browLA = 0, browRA = 0, browLift = 0;
-
-    switch (e) {
-      case "grin":  browLift = -3; break;
-      case "wink":  openL = 0; browLA = -0.35; browLift = -1; break;
-      case "rage":  browLA = 0.55; browRA = -0.55; browLift = 2; openL = openR = 0.7; break;
-      case "pain":  browLA = -0.4; browRA = 0.4; browLift = -1; openL = openR = 0.55; break;
-      case "panic": browLift = -4; openL = openR = 1.3; break;
-      case "ko":    openL = openR = -1; break;   // křížky
-      default:
-        if (this.blinking > 0) { openL = openR = 0.06; }
-    }
-
-    drawEye(ctx, L, openL, e);
-    drawEye(ctx, R, openR, e);
-
-    // obočí — světlé (blond), ale výrazné nadočnicové oblouky
-    ctx.strokeStyle = "#9a7838"; ctx.lineWidth = 3.2; ctx.lineCap = "round";
-    brow(ctx, L.x, 36 + browLift, browLA);
-    brow(ctx, R.x, 36 + browLift, browRA || -browLA);
-    // stín pod obočím — hlouběji posazené oči
-    ctx.strokeStyle = "rgba(150,100,60,0.35)"; ctx.lineWidth = 1.6;
-    brow(ctx, L.x, 39 + browLift * 0.6, browLA * 0.7);
-    brow(ctx, R.x, 39 + browLift * 0.6, (browRA || -browLA) * 0.7);
-  };
-
-  FaceCam.prototype.drawMouth = function (ctx, e) {
-    ctx.lineCap = "round";
-    switch (e) {
-      case "grin": { // široký zubatý úsměv
-        ctx.fillStyle = "#5e1414";
-        ctx.beginPath();
-        ctx.moveTo(32, 71);
-        ctx.quadraticCurveTo(50, 88, 68, 71);
-        ctx.quadraticCurveTo(50, 76, 32, 71);
-        ctx.closePath(); ctx.fill();
-        ctx.fillStyle = "#fff";
-        ctx.beginPath();
-        ctx.moveTo(34, 71.5);
-        ctx.quadraticCurveTo(50, 76, 66, 71.5);
-        ctx.quadraticCurveTo(50, 80, 34, 71.5);
-        ctx.closePath(); ctx.fill();
-        ctx.strokeStyle = "#3c0d0d"; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(32, 71); ctx.quadraticCurveTo(50, 88, 68, 71); ctx.stroke();
-        break;
-      }
-      case "rage": { // zatnuté zuby
-        ctx.fillStyle = "#fff";
-        roundRect(ctx, 35, 69, 30, 9, 2.5); ctx.fill();
-        ctx.strokeStyle = "#3c0d0d"; ctx.lineWidth = 1.4;
-        for (var i = 1; i < 5; i++) line(ctx, 35 + i * 6, 69, 35 + i * 6, 78);
-        ctx.lineWidth = 2.2;
-        ctx.strokeRect(35, 69, 30, 9);
-        line(ctx, 35, 73.5, 65, 73.5);
-        break;
-      }
-      case "pain": { // bolestivá grimasa
-        ctx.fillStyle = "#5e1414";
-        ellipseRot(ctx, 49, 74, 8, 5.5, 0.18);
-        ctx.strokeStyle = "#3c0d0d"; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(41, 71); ctx.quadraticCurveTo(49, 66.5, 57, 72); ctx.stroke();
-        break;
-      }
-      case "panic": { // roztřesená vlnovka
-        ctx.strokeStyle = "#3c0d0d"; ctx.lineWidth = 2.4;
-        ctx.beginPath();
-        ctx.moveTo(38, 74);
-        for (var x = 38; x <= 62; x += 4) ctx.lineTo(x, 74 + ((x / 4) % 2 ? -2.4 : 2.4));
-        ctx.stroke();
-        break;
-      }
-      case "wink": { // spiklenecký úšklebek
-        ctx.strokeStyle = "#3c0d0d"; ctx.lineWidth = 2.6;
-        ctx.beginPath(); ctx.moveTo(36, 73); ctx.quadraticCurveTo(52, 80, 66, 68); ctx.stroke();
-        break;
-      }
-      case "ko": { // omráčený, jazyk venku
-        ctx.strokeStyle = "#3c0d0d"; ctx.lineWidth = 2.4;
-        ellipseStroke(ctx, 48, 73, 5, 4);
-        ctx.fillStyle = "#e07a8a";
-        ellipseRot(ctx, 53, 78, 3.4, 5, 0.5);
-        break;
-      }
-      default: { // sebevědomý úsměšek
-        ctx.strokeStyle = "#3c0d0d"; ctx.lineWidth = 2.6;
-        ctx.beginPath(); ctx.moveTo(38, 73.5); ctx.quadraticCurveTo(54, 77.5, 63, 70.5); ctx.stroke();
-      }
-    }
-  };
+  function drawFrame(ctx, opts) {
+    if (opts.frameless) return;
+    ctx.strokeStyle = "#000"; ctx.lineWidth = 3; ctx.strokeRect(1.5, 1.5, 97, 97);
+    ctx.strokeStyle = "#4c4c55"; ctx.lineWidth = 1.5; ctx.strokeRect(4, 4, 92, 92);
+  }
 
   /* ----------------------- pomocné kreslení ----------------------- */
 
-  // hranatý obrys hlavy — sdílený pro pleť i ruměnec
-  function headPath(ctx) {
-    ctx.beginPath();
-    ctx.moveTo(20, 20);
-    ctx.lineTo(16, 60);
-    ctx.lineTo(27, 84);
-    ctx.lineTo(38, 92);
-    ctx.lineTo(62, 92);
-    ctx.lineTo(73, 84);
-    ctx.lineTo(84, 60);
-    ctx.lineTo(80, 20);
-    ctx.closePath();
-  }
-  function ellipse(ctx, cx, cy, rx, ry) {
-    ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
-  }
   function ellipseRot(ctx, cx, cy, rx, ry, rot) {
     ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, rot, 0, Math.PI * 2); ctx.fill();
   }
-  function ellipseStroke(ctx, cx, cy, rx, ry) {
-    ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
-  }
   function line(ctx, x1, y1, x2, y2) {
     ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-  }
-  function roundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-  }
-  function drawEye(ctx, p, open, expr) {
-    if (open < 0) { // KO křížky
-      ctx.strokeStyle = "#2c1d13"; ctx.lineWidth = 2.6;
-      line(ctx, p.x - 4, p.y - 4, p.x + 4, p.y + 4);
-      line(ctx, p.x + 4, p.y - 4, p.x - 4, p.y + 4);
-      return;
-    }
-    if (open <= 0.08) { // zavřené / mrknutí
-      ctx.strokeStyle = "#2c1d13"; ctx.lineWidth = 2.4;
-      line(ctx, p.x - 6, p.y + 1, p.x + 6, p.y + 1);
-      return;
-    }
-    var ry = 4.6 * Math.min(open, 1.4);
-    ctx.fillStyle = "#fff";
-    ellipse(ctx, p.x, p.y, 7, ry);
-    ctx.fillStyle = "#6b8ba4";                 // modrošedé oči
-    ellipse(ctx, p.x, p.y, 3, Math.min(ry, 3.4));
-    ctx.fillStyle = "#191919";
-    ellipse(ctx, p.x, p.y, 1.5, Math.min(ry, 1.8));
-    if (expr === "panic") {
-      ctx.fillStyle = "#fff";
-      ellipse(ctx, p.x - 1.4, p.y - 1.4, 0.9, 0.9);
-    }
-  }
-  // hranaté sklo aviatorek (jako na tiskovkách)
-  function teardrop(ctx, cx, cy) {
-    ctx.beginPath();
-    ctx.moveTo(cx - 11, cy - 6);
-    ctx.lineTo(cx + 11, cy - 6);
-    ctx.lineTo(cx + 9, cy + 9);
-    ctx.lineTo(cx - 6, cy + 9);
-    ctx.closePath();
-    ctx.fill();
-  }
-  function brow(ctx, cx, y, angle) {
-    ctx.save();
-    ctx.translate(cx, y); ctx.rotate(angle);
-    ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(8, 0); ctx.stroke();
-    ctx.restore();
   }
   function drop(ctx, x, y, r) {
     ctx.beginPath();
