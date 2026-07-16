@@ -14,13 +14,6 @@
 
   function FaceCam() {
     this.reset();
-    // Statické tečky strniště (jednou vygenerované, ať neblikají).
-    this.stubble = [];
-    for (var i = 0; i < 46; i++) {
-      var a = Math.random() * Math.PI;             // spodní půlkruh čelisti
-      var r = 20 + Math.random() * 12;
-      this.stubble.push({ x: 50 + Math.cos(a) * r * 0.95, y: 62 + Math.sin(a) * r * 0.62 });
-    }
   }
 
   FaceCam.prototype.reset = function () {
@@ -84,12 +77,24 @@
       ctx.fillRect(0, 0, 100, 100);
     }
 
-    // hlava
+    // hlava — široká tvář, hranatá čelist, výrazná brada
     ctx.fillStyle = tier === 2 ? "#d9a173" : "#e8b98a";
-    ellipse(ctx, 50, 54, 33, 40);
+    ctx.beginPath();
+    ctx.moveTo(17, 40);
+    ctx.quadraticCurveTo(15, 14, 50, 12);    // vysoké čelo
+    ctx.quadraticCurveTo(85, 14, 83, 40);
+    ctx.quadraticCurveTo(83, 68, 74, 81);    // rovné tváře
+    ctx.quadraticCurveTo(66, 92, 50, 93);    // široká hranatá brada
+    ctx.quadraticCurveTo(34, 92, 26, 81);
+    ctx.quadraticCurveTo(17, 68, 17, 40);
+    ctx.closePath();
+    ctx.fill();
     // uši
-    ellipse(ctx, 16, 54, 6, 10);
-    ellipse(ctx, 84, 54, 6, 10);
+    ellipse(ctx, 16, 52, 6, 10);
+    ellipse(ctx, 84, 52, 6, 10);
+    // rýha brady
+    ctx.strokeStyle = "rgba(160,110,70,0.5)"; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(43, 85); ctx.quadraticCurveTo(50, 88, 57, 85); ctx.stroke();
 
     // ruměnec vzteku
     if (e === "rage") {
@@ -97,32 +102,33 @@
       ellipse(ctx, 50, 60, 30, 34);
     }
 
-    // strniště
-    ctx.fillStyle = "rgba(45,28,15,0.16)";
-    beginJaw(ctx); ctx.fill();
-    ctx.fillStyle = "rgba(45,28,15,0.5)";
-    for (var i = 0; i < this.stubble.length; i++) {
-      ctx.fillRect(this.stubble[i].x, this.stubble[i].y, 1.1, 1.1);
-    }
-
-    // vlasy — tmavé, sčesané dozadu, mírné kouty
-    ctx.fillStyle = "#33231a";
+    // vlasy — blond, sčesané dozadu a nahoru s objemem, vysoké čelo
+    ctx.fillStyle = "#c9a25a";
     ctx.beginPath();
-    ctx.moveTo(17, 42);
-    ctx.quadraticCurveTo(16, 12, 50, 11);
-    ctx.quadraticCurveTo(84, 12, 83, 42);
-    ctx.quadraticCurveTo(76, 30, 64, 27);
-    ctx.quadraticCurveTo(57, 22, 50, 26);   // kout
-    ctx.quadraticCurveTo(43, 22, 36, 27);
-    ctx.quadraticCurveTo(24, 30, 17, 42);
+    ctx.moveTo(16, 40);
+    ctx.quadraticCurveTo(11, 16, 30, 8);
+    ctx.quadraticCurveTo(50, 1, 71, 9);      // objem na temeni
+    ctx.quadraticCurveTo(87, 16, 84, 40);
+    ctx.quadraticCurveTo(81, 25, 64, 21);    // linie vlasů vysoko
+    ctx.quadraticCurveTo(50, 18, 37, 21);
+    ctx.quadraticCurveTo(21, 25, 16, 40);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.14)";
-    ctx.lineWidth = 1;
-    for (var s = 0; s < 3; s++) {
+    // tmavší zástřih po stranách
+    ctx.fillStyle = "#a9863f";
+    ctx.beginPath();
+    ctx.moveTo(16, 40); ctx.quadraticCurveTo(14, 26, 22, 17);
+    ctx.quadraticCurveTo(19, 30, 20, 40); ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(84, 40); ctx.quadraticCurveTo(86, 26, 78, 17);
+    ctx.quadraticCurveTo(81, 30, 80, 40); ctx.closePath(); ctx.fill();
+    // prameny sčesané dozadu
+    ctx.strokeStyle = "rgba(240,216,150,0.55)";
+    ctx.lineWidth = 1.2;
+    for (var s = 0; s < 4; s++) {
       ctx.beginPath();
-      ctx.moveTo(30 + s * 14, 16 + s * 1.5);
-      ctx.quadraticCurveTo(50, 12 + s * 2, 70 - s * 12, 17 + s * 1.5);
+      ctx.moveTo(28 + s * 10, 17 - s * 1.2);
+      ctx.quadraticCurveTo(50, 6 + s * 2.4, 70 - s * 8, 14 - s * 0.6);
       ctx.stroke();
     }
 
@@ -188,14 +194,17 @@
 
   FaceCam.prototype.drawEyes = function (ctx, e) {
     if (this.sunglasses && e !== "ko") {
-      // Sluneční brýle při extázi z komba.
-      ctx.fillStyle = "#111";
-      roundRect(ctx, 24, 40, 22, 11, 4); ctx.fill();
-      roundRect(ctx, 54, 40, 22, 11, 4); ctx.fill();
-      ctx.fillRect(45, 43, 10, 2.6);
-      ctx.fillRect(17, 42, 8, 2.4); ctx.fillRect(75, 42, 8, 2.4);
-      ctx.fillStyle = "rgba(255,255,255,0.5)";
-      ctx.fillRect(27, 42, 5, 2); ctx.fillRect(57, 42, 5, 2);
+      // Aviatorky při extázi z komba (jako na tiskovkách).
+      ctx.fillStyle = "#151312";
+      teardrop(ctx, 36, 45);
+      teardrop(ctx, 64, 45);
+      ctx.strokeStyle = "#c9a25a"; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(44, 41); ctx.lineTo(56, 41); ctx.stroke();  // můstek
+      ctx.beginPath(); ctx.moveTo(45, 44); ctx.lineTo(55, 44); ctx.stroke();  // dvojitý
+      ctx.beginPath(); ctx.moveTo(18, 42); ctx.lineTo(27, 41); ctx.stroke();  // nožičky
+      ctx.beginPath(); ctx.moveTo(82, 42); ctx.lineTo(73, 41); ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255,0.35)";
+      ctx.fillRect(30, 43, 5, 1.8); ctx.fillRect(58, 43, 5, 1.8);
       return;
     }
     var L = { x: 36, y: 45 }, R = { x: 64, y: 45 };
@@ -216,10 +225,14 @@
     drawEye(ctx, L, openL, e);
     drawEye(ctx, R, openR, e);
 
-    // obočí — hustá
-    ctx.strokeStyle = "#2c1d13"; ctx.lineWidth = 3.4; ctx.lineCap = "round";
+    // obočí — světlé (blond), ale výrazné nadočnicové oblouky
+    ctx.strokeStyle = "#9a7838"; ctx.lineWidth = 3.2; ctx.lineCap = "round";
     brow(ctx, L.x, 36 + browLift, browLA);
     brow(ctx, R.x, 36 + browLift, browRA || -browLA);
+    // stín pod obočím — hlouběji posazené oči
+    ctx.strokeStyle = "rgba(150,100,60,0.35)"; ctx.lineWidth = 1.6;
+    brow(ctx, L.x, 39 + browLift * 0.6, browLA * 0.7);
+    brow(ctx, R.x, 39 + browLift * 0.6, (browRA || -browLA) * 0.7);
   };
 
   FaceCam.prototype.drawMouth = function (ctx, e) {
@@ -309,14 +322,6 @@
     ctx.arcTo(x, y, x + w, y, r);
     ctx.closePath();
   }
-  function beginJaw(ctx) {
-    ctx.beginPath();
-    ctx.moveTo(24, 62);
-    ctx.quadraticCurveTo(28, 90, 50, 92);
-    ctx.quadraticCurveTo(72, 90, 76, 62);
-    ctx.quadraticCurveTo(50, 72, 24, 62);
-    ctx.closePath();
-  }
   function drawEye(ctx, p, open, expr) {
     if (open < 0) { // KO křížky
       ctx.strokeStyle = "#2c1d13"; ctx.lineWidth = 2.6;
@@ -332,7 +337,7 @@
     var ry = 4.6 * Math.min(open, 1.4);
     ctx.fillStyle = "#fff";
     ellipse(ctx, p.x, p.y, 7, ry);
-    ctx.fillStyle = "#5c4326";
+    ctx.fillStyle = "#6b8ba4";                 // modrošedé oči
     ellipse(ctx, p.x, p.y, 3, Math.min(ry, 3.4));
     ctx.fillStyle = "#191919";
     ellipse(ctx, p.x, p.y, 1.5, Math.min(ry, 1.8));
@@ -340,6 +345,16 @@
       ctx.fillStyle = "#fff";
       ellipse(ctx, p.x - 1.4, p.y - 1.4, 0.9, 0.9);
     }
+  }
+  // kapkovité sklo aviatorek
+  function teardrop(ctx, cx, cy) {
+    ctx.beginPath();
+    ctx.moveTo(cx - 10, cy - 4);
+    ctx.quadraticCurveTo(cx, cy - 8, cx + 10, cy - 4);
+    ctx.quadraticCurveTo(cx + 10, cy + 7, cx + 2, cy + 9);
+    ctx.quadraticCurveTo(cx - 8, cy + 9, cx - 10, cy - 4);
+    ctx.closePath();
+    ctx.fill();
   }
   function brow(ctx, cx, y, angle) {
     ctx.save();

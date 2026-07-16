@@ -1080,7 +1080,7 @@
   }
 
   // debug hook pro testy a ladění efektů z konzole
-  window.__gtaDebug = { addBanner: addBanner };
+  window.__gtaDebug = { addBanner: addBanner, face: face };
 
   var last = performance.now();
   function frame(now) {
