@@ -8,9 +8,9 @@ na silnici právě děje.
 
 Hra má dva koncepty, vybírá se v úvodním menu (`index.html`):
 
-- **Koncept A — GTA** (`carmageddon.html`): pohled shora, tři pruhy,
+- **Koncept A — GTA** (`gta.html`): pohled shora, tři pruhy,
   Turkocam v panelu ve stylu Doom.
-- **Koncept B — Turkmageddon** (`stunts.html`): first-person kokpit hranatého
+- **Koncept B — Turkmageddon** (`turkmageddon.html`): first-person kokpit hranatého
   teréňáku ve stylu Mercedesu G (palubovka s kulatými výdechy, widescreen
   budíky, volant s hvězdou) s pseudo-3D silnicí — a grimasami
   ve **zpětném zrcátku**. Semafor tu má **každý pruh vlastní**.
@@ -62,8 +62,8 @@ sama. Detaily a hotový prompt: [assets/face/README.md](assets/face/README.md).
 
 ```
 index.html       – úvodní menu s výběrem konceptu
-carmageddon.html – koncept A (top-down)
-stunts.html      – koncept B (first-person kokpit)
+gta.html         – koncept A (top-down)
+turkmageddon.html – koncept B (first-person kokpit)
 css/style.css    – styly (hry, menu, novinový game over)
 js/face.js       – Turkocam: stavový automat grimas + procedurální karikatura
                    (sdílený oběma koncepty — panel v A, zrcátko v B)

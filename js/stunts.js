@@ -335,9 +335,14 @@
       audio.crash(relKmh / 150);
       addBanner("SANITKA! SKANDÁL! −500", "#e01414", 46, 3.2, 118, true);
     } else {
+      var prevM = mult();
       combo += 1;
       comboTimer = 4;
       var m = mult();
+      // velké oznámení pokaždé, když násobič povyroste
+      if (m > 1 && m > prevM) {
+        addBanner("KOMBO ×" + m + "!", "#ff8c42", 26 + m * 5, 1.6, 196, false);
+      }
       var gain = c.type.votes * m;
       if (c.type.ev) gain += 150;              // bonus za elektromobil
       score += gain;
@@ -556,38 +561,137 @@
     ctx.fillStyle = "rgba(255,240,180,0.25)";
     ctx.beginPath(); ctx.arc(500, 62, 44, 0, Math.PI * 2); ctx.fill();
 
-    // městské panorama — dvě vrstvy siluet věžáků (parallax podle zatáček)
+    // pražské panorama — Hradčany s katedrálou a střechy Starého Města
     var hy = H * 0.45;
-    skylineLayer(hy + 4, 34, 6, "#5a6472", false);
-    skylineLayer(hy + 16, 28, 11, "#3c4550", true);
-    ctx.fillStyle = "rgba(207,230,242,0.28)";   // smogový opar
-    ctx.fillRect(0, hy - 52, W, 70);
+    pragueCastleLayer(hy + 6, mtOff * 5);
+    oldTownLayer(hy + 22, mtOff * 10);
+    ctx.fillStyle = "rgba(207,230,242,0.22)";   // letní opar nad Vltavou
+    ctx.fillRect(0, hy - 80, W, 100);
   }
 
-  function skylineLayer(baseY, bw, speedK, color, windows) {
-    var sc = mtOff * speedK;
+  // vrstva 1: silueta Hradčan — hradní kopec, dlouhý palác, sv. Vít
+  function pragueCastleLayer(baseY, sc) {
+    var P = 900;
+    var off = -(((sc % P) + P) % P);
+    for (var x0 = off - P; x0 < W + P; x0 += P) {
+      drawHradcany(x0, baseY);
+    }
+    ctx.fillStyle = "#8c937f";
+    ctx.fillRect(0, baseY + 12, W, 12);
+  }
+
+  function drawHradcany(x0, baseY) {
+    // zelený hradní kopec, zbytek periody nízký hřeben
+    ctx.fillStyle = "#7d8a72";
+    ctx.beginPath();
+    ctx.moveTo(x0 - 60, baseY + 14);
+    ctx.lineTo(x0 + 30, baseY - 16);
+    ctx.lineTo(x0 + 540, baseY - 16);
+    ctx.lineTo(x0 + 640, baseY + 14);
+    ctx.lineTo(x0 + 900, baseY + 14);
+    ctx.lineTo(x0 + 900, baseY + 24);
+    ctx.lineTo(x0 - 60, baseY + 24);
+    ctx.closePath(); ctx.fill();
+
+    // dlouhá fasáda paláce
+    ctx.fillStyle = "#cfc2a3";
+    ctx.fillRect(x0 + 40, baseY - 42, 470, 28);
+    ctx.fillStyle = "#8f8672";
+    ctx.fillRect(x0 + 40, baseY - 48, 470, 8);
+    ctx.fillStyle = "rgba(90,80,60,0.5)";
+    for (var wx = x0 + 52; wx < x0 + 500; wx += 16) {
+      ctx.fillRect(wx, baseY - 34, 3, 8);
+    }
+    // věžičky se zelenými báněmi na krajích paláce
+    towerRound(x0 + 52, baseY - 48, 10, 16);
+    towerRound(x0 + 492, baseY - 48, 10, 16);
+
+    // katedrála sv. Víta
+    var cx = x0 + 250;
+    ctx.fillStyle = "#6b6257";
+    ctx.fillRect(cx - 8, baseY - 78, 62, 36);                 // loď
+    ctx.beginPath();
+    ctx.moveTo(cx - 8, baseY - 78);
+    ctx.lineTo(cx + 23, baseY - 86);
+    ctx.lineTo(cx + 54, baseY - 78);
+    ctx.closePath(); ctx.fill();
+    // dvě západní gotické věže
+    gothicSpire(cx - 26, baseY - 42, 9, 42, 22, "#5c554b");
+    gothicSpire(cx - 12, baseY - 42, 9, 42, 22, "#5c554b");
+    // hlavní jižní věž se zelenou špicí
+    ctx.fillStyle = "#6b6257";
+    ctx.fillRect(cx + 34, baseY - 96, 13, 54);
+    ctx.fillStyle = "#5f8a74";
+    ctx.beginPath();
+    ctx.moveTo(cx + 32, baseY - 96);
+    ctx.lineTo(cx + 40.5, baseY - 118);
+    ctx.lineTo(cx + 49, baseY - 96);
+    ctx.closePath(); ctx.fill();
+    // fiály na lodi
+    for (var f = 0; f < 3; f++) {
+      gothicSpire(cx + 2 + f * 16, baseY - 80, 3, 6, 8, "#5c554b");
+    }
+  }
+
+  // vrstva 2: střechy Starého Města — domy, Týn, měděné kupole
+  function oldTownLayer(baseY, sc) {
+    var bw = 36;
     var first = Math.floor(sc / bw);
     var shift = sc - first * bw;
-    for (var i = -1; i <= W / bw + 1; i++) {
+    for (var i = -2; i <= W / bw + 2; i++) {
       var col = first + i;
       var hsh = Math.abs(Math.sin(col * 12.9898) * 43758.5453) % 1;
-      var bh2 = 16 + hsh * 44;
       var bx = i * bw - shift;
-      ctx.fillStyle = color;
-      ctx.fillRect(bx, baseY - bh2, bw - 3, bh2 + 18);
-      if (windows) {
-        ctx.fillStyle = "rgba(255,226,140,0.75)";
-        for (var wy = 0; wy < 3; wy++) {
-          for (var wx = 0; wx < 2; wx++) {
-            if ((Math.floor(hsh * 997) + wy * 3 + wx * 7 + col) % 3 === 0) {
-              ctx.fillRect(bx + 5 + wx * 10, baseY - bh2 + 6 + wy * 10, 3, 4);
-            }
-          }
-        }
+      var kind = ((col % 11) + 11) % 11;
+      if (kind === 0) {
+        // týnské dvojvěží
+        gothicSpire(bx + 4, baseY, 8, 22, 14, "#4a463f");
+        gothicSpire(bx + 20, baseY, 8, 22, 14, "#4a463f");
+      } else if (kind === 5) {
+        // věž s měděnou kupolí (sv. Mikuláš)
+        ctx.fillStyle = "#d8cdb2";
+        ctx.fillRect(bx + 8, baseY - 20, 16, 20);
+        ctx.fillStyle = "#5f8a74";
+        ctx.beginPath(); ctx.arc(bx + 16, baseY - 20, 9, Math.PI, 0); ctx.fill();
+        ctx.fillRect(bx + 14, baseY - 33, 4, 7);
+      } else {
+        // měšťanský dům s červenou střechou
+        var wallH = 12 + hsh * 10;
+        ctx.fillStyle = ["#d8cdb2", "#cec2a4", "#c9bc9e"][Math.floor(hsh * 3)];
+        ctx.fillRect(bx, baseY - wallH, bw - 4, wallH);
+        ctx.fillStyle = hsh > 0.5 ? "#a35a44" : "#b06a4e";
+        ctx.beginPath();
+        ctx.moveTo(bx - 2, baseY - wallH);
+        ctx.lineTo(bx + (bw - 4) / 2, baseY - wallH - 9 - hsh * 6);
+        ctx.lineTo(bx + bw - 2, baseY - wallH);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = "rgba(80,70,55,0.55)";
+        ctx.fillRect(bx + 6, baseY - wallH + 4, 3, 4);
+        ctx.fillRect(bx + 14, baseY - wallH + 4, 3, 4);
       }
     }
+    // souvislý pás fasád pod střechami
+    ctx.fillStyle = "#c9bc9e";
+    ctx.fillRect(0, baseY - 2, W, 24);
+  }
+
+  function gothicSpire(x, baseY, w, bodyH, spikeH, color) {
     ctx.fillStyle = color;
-    ctx.fillRect(0, baseY + 14, W, 8);
+    ctx.fillRect(x, baseY - bodyH, w, bodyH);
+    ctx.beginPath();
+    ctx.moveTo(x - 1, baseY - bodyH);
+    ctx.lineTo(x + w / 2, baseY - bodyH - spikeH);
+    ctx.lineTo(x + w + 1, baseY - bodyH);
+    ctx.closePath(); ctx.fill();
+  }
+
+  function towerRound(x, baseY, w, h) {
+    ctx.fillStyle = "#c5b898";
+    ctx.fillRect(x - w / 2, baseY - h, w, h);
+    ctx.fillStyle = "#5f8a74";
+    ctx.beginPath();
+    ctx.arc(x, baseY - h, w / 2 + 1, Math.PI, 0);
+    ctx.fill();
   }
 
   function renderSegment(seg) {
