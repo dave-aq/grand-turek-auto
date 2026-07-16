@@ -19,7 +19,7 @@
   var FOV = 100;
   var CAM_DEPTH = 1 / Math.tan((FOV / 2) * Math.PI / 180);
   var PLAYER_Z = CAM_H * CAM_DEPTH;
-  var MAXS = 250;                  // km/h
+  var MAXS = 325;                  // km/h — rekord od Ostravy
   var UNITS = 55;                  // světové jednotky za s na 1 km/h
   var CENTRIFUGAL = 0.28;
   var FOG_DENSITY = 5;
@@ -145,7 +145,7 @@
   var position, prevPos, speed, playerX, wheelAngle;
   var health, lastTier, score, best, combo, comboTimer, wrecksN, distanceM, timeT;
   var cars, floats, sparks, cracks, banners, shake, rageCd, over, mtOff;
-  var bombsActive, bombsTotal, bombsCarry;
+  var flowActive, flowOstrava, flowTotal, flowCarry;
 
   best = parseInt(localStorage.getItem("gta_best_stunts") || "0", 10);
 
@@ -155,7 +155,7 @@
     wrecksN = 0; distanceM = 0; timeT = 0;
     floats = []; sparks = []; cracks = []; banners = [];
     shake = 0; rageCd = 0; mtOff = 0;
-    bombsActive = false; bombsTotal = 0; bombsCarry = 0;
+    flowActive = false; flowOstrava = false; flowTotal = 0; flowCarry = 0;
     over = false;
     face.reset();
     cars = [];
@@ -202,16 +202,19 @@
     if (offroad && speed > 70) speed -= 100 * dt;
     speed = Math.max(0, Math.min(MAXS, speed));
 
-    // BOMBY: držení maximálky sype hlasy (100/s)
-    if (speed >= MAXS - 0.5) {
-      if (!bombsActive) { bombsActive = true; bombsTotal = 0; bombsCarry = 0; }
-      bombsCarry += 100 * dt;
-      var whole = Math.floor(bombsCarry);
-      if (whole > 0) { score += whole; bombsTotal += whole; bombsCarry -= whole; }
-    } else if (bombsActive) {
-      bombsActive = false;
-      if (bombsTotal > 0) {
-        addFloat(W / 2, H * 0.35, "Bomby! +" + bombsTotal + " hlasů", "#ffd23f");
+    // PLYNULÁ JÍZDA: od 200 km/h naskakují hlasy (100/s);
+    // na maximálce 325 se přepne REŽIM OSTRAVA (300/s)
+    if (speed >= 200) {
+      if (!flowActive) { flowActive = true; flowTotal = 0; flowCarry = 0; }
+      flowOstrava = speed >= MAXS - 0.5;
+      flowCarry += (flowOstrava ? 300 : 100) * dt;
+      var whole = Math.floor(flowCarry);
+      if (whole > 0) { score += whole; flowTotal += whole; flowCarry -= whole; }
+    } else if (flowActive) {
+      flowActive = false;
+      flowOstrava = false;
+      if (flowTotal > 0) {
+        addFloat(W / 2, H * 0.35, "Plynulá jízda! +" + flowTotal + " hlasů", "#ffd23f");
       }
     }
 
@@ -360,7 +363,7 @@
       var m = mult();
       // velké oznámení pokaždé, když násobič povyroste
       if (m > 1 && m > prevM) {
-        addBanner("KOMBO ×" + m + "!", "#ff8c42", 26 + m * 5, 1.6, 196, false);
+        addBanner("SPIRÁLA REALISMU ×" + m + "!", "#ff8c42", 20 + m * 4, 1.7, 196, false);
       }
       var gain = c.type.votes * m;
       if (c.type.ev) gain += 150;              // bonus za elektromobil
@@ -1141,26 +1144,49 @@
 
   // velké vyskakovací nápisy (elektromobil, sanitka s krví, kombo, BOMBY)
   function drawBanners() {
-    // trvalý banner BOMBY, dokud hráč drží maximálku
-    if (bombsActive) {
-      var pulse = 1 + 0.07 * Math.sin(timeT * 12);
+    // trvalý banner PLYNULÁ JÍZDA / REŽIM OSTRAVA, dokud hráč drží 200+
+    if (flowActive) {
+      var pulse = 1 + (flowOstrava ? 0.1 : 0.06) * Math.sin(timeT * (flowOstrava ? 16 : 11));
+      var jitter = flowOstrava ? 6 : 3;
       ctx.save();
-      ctx.translate(W / 2 + (Math.random() - 0.5) * 3, 128);
+      ctx.translate(W / 2 + (Math.random() - 0.5) * jitter, 128);
       ctx.scale(pulse, pulse);
       ctx.textAlign = "center";
       ctx.lineJoin = "round";
-      ctx.font = "bold 54px Arial";
+      ctx.font = "bold " + (flowOstrava ? 52 : 46) + "px Arial";
       ctx.lineWidth = 8;
-      ctx.strokeStyle = "#7a1010";
-      ctx.strokeText("BOMBY!", 0, 0);
-      ctx.fillStyle = "#ffd23f";
-      ctx.fillText("BOMBY!", 0, 0);
-      ctx.font = "bold 17px Arial";
+      ctx.strokeStyle = flowOstrava ? "#4a0d05" : "#7a1010";
+      ctx.strokeText(flowOstrava ? "REŽIM OSTRAVA!" : "PLYNULÁ JÍZDA!", 0, 0);
+      ctx.fillStyle = flowOstrava ? "#ff5d3d" : "#ffd23f";
+      ctx.fillText(flowOstrava ? "REŽIM OSTRAVA!" : "PLYNULÁ JÍZDA!", 0, 0);
+      ctx.font = "italic bold 16px Arial";
       ctx.lineWidth = 4;
       ctx.strokeStyle = "#000";
-      ctx.strokeText("+" + bombsTotal + " hlasů", 0, 24);
+      ctx.strokeText(flowOstrava ? "325 km/h!" : "německá dálnice", 0, 23);
+      ctx.fillStyle = "#e8e8e8";
+      ctx.fillText(flowOstrava ? "325 km/h!" : "německá dálnice", 0, 23);
+      // počítadlo roste s nasbíranými hlasy
+      var cSize = 16 + Math.min(30, flowTotal * 0.03);
+      ctx.font = "bold " + cSize + "px Arial";
+      ctx.lineWidth = Math.max(4, cSize * 0.14);
+      ctx.strokeStyle = "#000";
+      ctx.strokeText("+" + flowTotal + " hlasů", 0, 30 + cSize);
       ctx.fillStyle = "#fff";
-      ctx.fillText("+" + bombsTotal + " hlasů", 0, 24);
+      ctx.fillText("+" + flowTotal + " hlasů", 0, 30 + cSize);
+      ctx.restore();
+    }
+
+    // DOJEZDOVÁ TÍSEŇ — bliká, když je karoserie skoro na šrot
+    if (health < 25 && health > 0 && Math.floor(timeT * 2.5) % 3 !== 2) {
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.lineJoin = "round";
+      ctx.font = "bold 26px Arial";
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = "#3d1a02";
+      ctx.strokeText("DOJEZDOVÁ TÍSEŇ!", W / 2, 308);
+      ctx.fillStyle = "#ffb62e";
+      ctx.fillText("DOJEZDOVÁ TÍSEŇ!", W / 2, 308);
       ctx.restore();
     }
     for (var i = 0; i < banners.length; i++) {
@@ -1309,7 +1335,11 @@
   }
 
   // debug hook pro testy a ladění efektů z konzole
-  window.__gtaDebug = { addBanner: addBanner, face: face };
+  window.__gtaDebug = {
+    addBanner: addBanner,
+    face: face,
+    boost: function (v) { speed = Math.min(MAXS, Math.max(0, v)); }
+  };
 
   var last = performance.now();
   function frame(now) {
