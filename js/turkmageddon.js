@@ -82,7 +82,7 @@
       segments.push({
         index: i, curve: curveArr[i], clip: H,
         cross: false, zebra: false, bldg: null,
-        most: false, mostBldg: false,
+        most: false, mostBldg: false, mostTotem: false, nearMost: false,
         p1: { world: { x: 0, y: yAt(i), z: i * SEG_L }, camera: {}, screen: {} },
         p2: { world: { x: 0, y: yAt(i + 1), z: (i + 1) * SEG_L }, camera: {}, screen: {} }
       });
@@ -121,14 +121,19 @@
       var zone = { start: m, end: m + 11, midZ: (m + 5) * SEG_L, used: false };
       mostarnas.push(zone);
       for (var zs = zone.start; zs <= zone.end; zs++) segments[zs].most = true;
+      // před moštárnou uvolnit výhled od domů
+      for (var zn = m - 16; zn <= m + 13; zn++) {
+        segments[(zn + N) % N].nearMost = true;
+      }
       segments[m + 5].mostBldg = true;
+      segments[m].mostTotem = true;
       m += 300 + Math.floor(Math.random() * 160);
     }
 
     // domy podél silnice (mimo křižovatky a moštárny)
     for (var bi = 0; bi < N; bi += 4) {
       var sb = segments[bi];
-      if (sb.cross || sb.most) continue;
+      if (sb.cross || sb.most || sb.nearMost) continue;
       var hsh = Math.abs(Math.sin(bi * 12.9898) * 43758.5453) % 1;
       sb.bldg = {
         side: Math.floor(bi / 4) % 2 === 0 ? -1 : 1,
@@ -574,6 +579,7 @@
     for (var m = DRAW_DIST - 1; m >= 1; m--) {
       var sg = segments[(base.index + m) % N];
       if (sg.bldg) drawBuilding(sg);
+      if (sg.mostTotem) drawMostTotem(sg);
       if (sg.mostBldg) drawMostarna(sg);
       var ga = gantryBySeg[sg.index];
       if (ga) drawGantry(sg, ga);
@@ -854,9 +860,9 @@
     var p = seg.p1.screen;
     if (p.w <= 0) return;
     var u = p.scale * (W / 2);
-    var bw2 = u * 1500, bh2 = u * 620;
+    var bw2 = u * 1700, bh2 = u * 720;
     if (bw2 < 4) return;
-    var x = p.x + p.w * 2.45;
+    var x = p.x + p.w * 1.92;
 
     ctx.save();
     ctx.beginPath(); ctx.rect(0, 0, W, seg.clip); ctx.clip();
@@ -899,6 +905,46 @@
       circle(sx + sh * 0.32, sy + sh * 0.42, sh * 0.16, "#c0392b");
       ctx.fillStyle = "#4a7a3a";
       ctx.fillRect(sx + sh * 0.29, sy + sh * 0.18, sh * 0.07, sh * 0.12);
+    }
+    ctx.restore();
+  }
+
+  // vysoký reklamní totem MOŠTÁRNA — viditelný z dálky jako u benzinek
+  function drawMostTotem(seg) {
+    var p = seg.p1.screen;
+    if (p.w <= 0) return;
+    var u = p.scale * (W / 2);
+    var h = u * 1550;
+    if (h < 10) return;
+    var x = p.x + p.w * 1.5;
+
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, W, seg.clip); ctx.clip();
+    ctx.globalAlpha = Math.max(0.2, seg.fog);
+    // sloup
+    ctx.fillStyle = "#5c5650";
+    ctx.fillRect(x - Math.max(1, u * 45), p.y - h, Math.max(2, u * 90), h);
+    // tabule
+    var bw3 = u * 1350, bh3 = u * 400;
+    if (bh3 > 6) {
+      var bx = x - bw3 / 2, by = p.y - h - bh3;
+      ctx.fillStyle = "#f2ead6";
+      ctx.fillRect(bx, by, bw3, bh3);
+      ctx.strokeStyle = "#6e2a1a";
+      ctx.lineWidth = Math.max(1.5, u * 20);
+      ctx.strokeRect(bx, by, bw3, bh3);
+      ctx.fillStyle = "#a1121a";
+      ctx.textAlign = "center";
+      ctx.font = "bold " + bh3 * 0.42 + "px Arial";
+      ctx.fillText("MOŠTÁRNA", x + bh3 * 0.14, by + bh3 * 0.52);
+      if (bh3 > 16) {
+        ctx.fillStyle = "#6b6257";
+        ctx.font = "italic " + bh3 * 0.19 + "px Arial";
+        ctx.fillText("opravy karoserií · mošt", x, by + bh3 * 0.82);
+        circle(bx + bh3 * 0.34, by + bh3 * 0.4, bh3 * 0.15, "#c0392b");
+        ctx.fillStyle = "#4a7a3a";
+        ctx.fillRect(bx + bh3 * 0.31, by + bh3 * 0.18, bh3 * 0.07, bh3 * 0.11);
+      }
     }
     ctx.restore();
   }
