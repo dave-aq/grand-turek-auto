@@ -8,9 +8,9 @@ na silnici právě děje.
 
 Hra má dva koncepty, vybírá se v úvodním menu (`index.html`):
 
-- **Koncept A — Carmageddon** (`carmageddon.html`): pohled shora, tři pruhy,
+- **Koncept A — GTA** (`carmageddon.html`): pohled shora, tři pruhy,
   Turkocam v panelu ve stylu Doom.
-- **Koncept B — STUNTS** (`stunts.html`): first-person kokpit hranatého
+- **Koncept B — Turkmageddon** (`stunts.html`): first-person kokpit hranatého
   teréňáku ve stylu Mercedesu G (palubovka s kulatými výdechy, widescreen
   budíky, volant s hvězdou) s pseudo-3D silnicí — a grimasami
   ve **zpětném zrcátku**. Semafor tu má **každý pruh vlastní**.
