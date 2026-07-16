@@ -19,21 +19,44 @@ dál kreslí vestavěná grimasa):
 vykresluje ostře (bez vyhlazování). Průhledné pozadí funguje — pod
 obrázkem je tmavý rám panelu/zrcátka.
 
-## Prompt pro generátor (např. ChatGPT / Midjourney)
+## Postup generování (po jedné grimase)
 
-> 96x96 pixel art portrait, head only, satirical caricature of a Czech
-> politician type: blond hair combed back and up with volume, high
-> forehead, very square jaw, broad chin, blue-grey eyes, clean shaven,
-> navy suit collar, dark background, retro DOS game HUD style (like the
-> Doom status bar face), bold readable features.
->
-> Varianty: neutral confident smirk / huge grin with teeth / winking /
-> furious red face gritting teeth / hurt grimace with bruise / panicked
-> sweating / knocked out with X eyes and stars / wearing gold aviator
-> sunglasses.
+1. Vygenerujte nejdřív `neutral.png` a dolaďte, dokud nesedí.
+2. Další grimasy zadávejte **ve stejné konverzaci** a k promptu přidejte:
+   *"Same character, same style, same palette, same framing as the
+   previous image — change ONLY the facial expression."*
+3. Chtějte čtvercové PNG, ideálně „true 64x64 pixel art upscaled with
+   nearest neighbor".
 
-Ať jsou všechny varianty ze stejného „setu" (stejný styl, stejná velikost
-hlavy), jinak budou grimasy poskakovat.
+### Základní prompt (vložit pokaždé, doplnit řádek Expression)
+
+> Retro pixel art portrait sprite for a game HUD, like the Doom status
+> bar face. Head and shoulders, front view, centered, head fills about
+> 80% of a square canvas. Character: satirical caricature of a Czech
+> politician type — blond hair combed back and up into a high pompadour
+> with darker gold strands, high forehead, very square angular jaw,
+> broad chin with a subtle crease, blue-grey eyes, thick darker-blond
+> eyebrows, clean shaven, wearing a dark navy suit with a white shirt
+> collar. Style: crisp pixel art on a 64x64 grid, bold readable
+> features, limited palette, no anti-aliasing, flat very dark background
+> (#151517), no text, no watermark. Expression: …
+
+### Dovětky pro jednotlivé soubory
+
+| Soubor | Expression: … |
+|---|---|
+| `neutral.png` | confident subtle smirk, relaxed eyes looking straight at the viewer |
+| `grin.png` | huge triumphant grin showing a full row of white teeth, raised eyebrows, delighted |
+| `wink.png` | one eye winking closed, the other open, sly conspiratorial smirk |
+| `rage.png` | furious — whole face flushed red, eyebrows in a steep angry V, open shouting mouth with gritted teeth |
+| `pain.png` | hurt grimace — eyes squeezed shut, eyebrows tilted up in pain, mouth twisted open, purple bruise on one cheek, small bandage on the forehead |
+| `panic.png` | panicked — eyes wide open with tiny pupils, eyebrows raised high, small trembling open mouth, sweat drops on the temples |
+| `ko.png` | knocked out — X-shaped closed eyes, dazed, tongue sticking slightly out of a small open mouth, three little yellow stars circling above the head |
+| `sunglasses.png` | cool and smug — wearing gold-framed aviator sunglasses with dark lenses, confident smirk |
+
+Zrcátko ve hře obraz stranově převrací (mrknutí „přeskočí" na druhé
+oko — to je správně, je to odraz). Všechny varianty musí být ze stejného
+„setu", jinak budou grimasy mezi sebou poskakovat.
 
 **Poznámka:** držte se stylizované karikatury/pixel artu — fotorealistická
 podoba skutečné osoby je právně i eticky ošemetnější než nadsázka.
