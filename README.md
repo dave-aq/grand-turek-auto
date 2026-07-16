@@ -50,6 +50,14 @@ Hra je statická, takže funguje i na GitHub Pages
   krvavý titulek přes obrazovku).
 - Hra končí, když je karoserie na šrot.
 
+## Vlastní obličej (AI pixel art)
+
+Vestavěná karikatura jde nahradit vlastními obrázky (třeba vygenerovanými
+AI): nahrajte PNG do `assets/face/` s názvy `neutral.png`, `grin.png`,
+`wink.png`, `rage.png`, `pain.png`, `panic.png`, `ko.png`
+a `sunglasses.png`. Hra je automaticky použije, chybějící stavy dál kreslí
+sama. Detaily a hotový prompt: [assets/face/README.md](assets/face/README.md).
+
 ## Struktura
 
 ```

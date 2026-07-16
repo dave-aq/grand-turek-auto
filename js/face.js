@@ -12,8 +12,25 @@
   var EXPR = { ko: "ko", pain: "pain", panic: "panic", kill: "grin", redlight: "wink", rage: "rage" };
   var DURATION = { ko: Infinity, pain: 0.7, panic: 1.6, kill: 0.9, redlight: 0.9, rage: 0.8 };
 
+  // Volitelný spritesheet: PNG v assets/face/<stav>.png nahradí vestavěnou
+  // kresbu daného stavu (např. AI pixel art). Chybějící soubory se tiše
+  // ignorují a dál se kreslí procedurální karikatura.
+  var SPRITE_KEYS = ["neutral", "grin", "wink", "rage", "pain", "panic", "ko", "sunglasses"];
+  var SPRITES = { tried: false, imgs: {} };
+
+  function tryLoadSprites() {
+    if (SPRITES.tried || typeof Image === "undefined") return;
+    SPRITES.tried = true;
+    SPRITE_KEYS.forEach(function (k) {
+      var im = new Image();
+      im.onload = function () { SPRITES.imgs[k] = im; };
+      im.src = "assets/face/" + k + ".png";
+    });
+  }
+
   function FaceCam() {
     this.reset();
+    tryLoadSprites();
   }
 
   FaceCam.prototype.reset = function () {
@@ -77,60 +94,76 @@
       ctx.fillRect(0, 0, 100, 100);
     }
 
-    // hlava — široká tvář, hranatá čelist, výrazná brada
-    ctx.fillStyle = tier === 2 ? "#d9a173" : "#e8b98a";
-    ctx.beginPath();
-    ctx.moveTo(17, 40);
-    ctx.quadraticCurveTo(15, 14, 50, 12);    // vysoké čelo
-    ctx.quadraticCurveTo(85, 14, 83, 40);
-    ctx.quadraticCurveTo(83, 68, 74, 81);    // rovné tváře
-    ctx.quadraticCurveTo(66, 92, 50, 93);    // široká hranatá brada
-    ctx.quadraticCurveTo(34, 92, 26, 81);
-    ctx.quadraticCurveTo(17, 68, 17, 40);
-    ctx.closePath();
-    ctx.fill();
-    // uši
-    ellipse(ctx, 16, 52, 6, 10);
-    ellipse(ctx, 84, 52, 6, 10);
-    // rýha brady
-    ctx.strokeStyle = "rgba(160,110,70,0.5)"; ctx.lineWidth = 1.6;
-    ctx.beginPath(); ctx.moveTo(43, 85); ctx.quadraticCurveTo(50, 88, 57, 85); ctx.stroke();
+    // vlastní sprite má přednost před kreslením
+    var spriteKey = (this.sunglasses && e !== "ko") ? "sunglasses" : e;
+    var sprite = SPRITES.imgs[spriteKey] || (spriteKey === "sunglasses" ? SPRITES.imgs[e] : null);
+    if (sprite) {
+      var smoothing = ctx.imageSmoothingEnabled;
+      ctx.imageSmoothingEnabled = false;      // pixel art zůstane ostrý
+      ctx.drawImage(sprite, 0, 0, 100, 100);
+      ctx.imageSmoothingEnabled = smoothing;
+      if (!opts.frameless) {
+        ctx.strokeStyle = "#000"; ctx.lineWidth = 3; ctx.strokeRect(1.5, 1.5, 97, 97);
+        ctx.strokeStyle = "#4c4c55"; ctx.lineWidth = 1.5; ctx.strokeRect(4, 4, 92, 92);
+      }
+      ctx.restore();
+      return;
+    }
 
-    // ruměnec vzteku
+    // hlava — „hranatá legenda": jen rovné linie a ostré rohy
+    ctx.fillStyle = tier === 2 ? "#d9a173" : "#e8b98a";
+    // uši — hranaté
+    ctx.fillRect(10, 44, 8, 16);
+    ctx.fillRect(82, 44, 8, 16);
+    headPath(ctx);
+    ctx.fill();
+    // lícní kosti a čelist — sekané stíny
+    ctx.strokeStyle = "rgba(160,110,70,0.4)"; ctx.lineWidth = 1.6;
+    line(ctx, 23, 64, 31, 73);
+    line(ctx, 77, 64, 69, 73);
+    // rýha brady — rovná
+    ctx.strokeStyle = "rgba(160,110,70,0.5)";
+    line(ctx, 43, 86, 57, 86);
+
+    // ruměnec vzteku — zrudne celá hranatá hlava
     if (e === "rage") {
       ctx.fillStyle = "rgba(210,40,20,0.38)";
-      ellipse(ctx, 50, 60, 30, 34);
+      headPath(ctx);
+      ctx.fill();
     }
 
-    // vlasy — blond, sčesané dozadu a nahoru s objemem, vysoké čelo
+    // vlasy — blond hranatý quiff sčesaný dozadu, zubatá linie vlasů
     ctx.fillStyle = "#c9a25a";
     ctx.beginPath();
-    ctx.moveTo(16, 40);
-    ctx.quadraticCurveTo(11, 16, 30, 8);
-    ctx.quadraticCurveTo(50, 1, 71, 9);      // objem na temeni
-    ctx.quadraticCurveTo(87, 16, 84, 40);
-    ctx.quadraticCurveTo(81, 25, 64, 21);    // linie vlasů vysoko
-    ctx.quadraticCurveTo(50, 18, 37, 21);
-    ctx.quadraticCurveTo(21, 25, 16, 40);
+    ctx.moveTo(15, 27);
+    ctx.lineTo(11, 12);
+    ctx.lineTo(24, 0);       // quiff vysoko vpředu
+    ctx.lineTo(48, -2);
+    ctx.lineTo(76, 3);
+    ctx.lineTo(88, 14);
+    ctx.lineTo(85, 27);
+    ctx.lineTo(74, 20);      // zubatá linie vlasů
+    ctx.lineTo(60, 23);
+    ctx.lineTo(46, 20);
+    ctx.lineTo(32, 23);
+    ctx.lineTo(22, 19);
     ctx.closePath();
     ctx.fill();
-    // tmavší zástřih po stranách
+    // tmavší zástřih po stranách — ostré klíny
     ctx.fillStyle = "#a9863f";
     ctx.beginPath();
-    ctx.moveTo(16, 40); ctx.quadraticCurveTo(14, 26, 22, 17);
-    ctx.quadraticCurveTo(19, 30, 20, 40); ctx.closePath(); ctx.fill();
+    ctx.moveTo(15, 27); ctx.lineTo(11, 12); ctx.lineTo(21, 14); ctx.lineTo(20, 25);
+    ctx.closePath(); ctx.fill();
     ctx.beginPath();
-    ctx.moveTo(84, 40); ctx.quadraticCurveTo(86, 26, 78, 17);
-    ctx.quadraticCurveTo(81, 30, 80, 40); ctx.closePath(); ctx.fill();
-    // prameny sčesané dozadu
-    ctx.strokeStyle = "rgba(240,216,150,0.55)";
-    ctx.lineWidth = 1.2;
-    for (var s = 0; s < 4; s++) {
-      ctx.beginPath();
-      ctx.moveTo(28 + s * 10, 17 - s * 1.2);
-      ctx.quadraticCurveTo(50, 6 + s * 2.4, 70 - s * 8, 14 - s * 0.6);
-      ctx.stroke();
-    }
+    ctx.moveTo(85, 27); ctx.lineTo(88, 14); ctx.lineTo(79, 9); ctx.lineTo(80, 25);
+    ctx.closePath(); ctx.fill();
+    // prameny — rovné šikmé tahy směrem dozadu
+    ctx.strokeStyle = "rgba(240,216,150,0.6)";
+    ctx.lineWidth = 1.3;
+    line(ctx, 26, 16, 44, 1);
+    line(ctx, 36, 18, 56, 2);
+    line(ctx, 48, 18, 68, 4);
+    line(ctx, 60, 19, 78, 7);
 
     // modřiny podle zdraví
     if (tier >= 1) {
@@ -155,13 +188,14 @@
     // oči / brýle
     this.drawEyes(ctx, e);
 
-    // nos — výrazný
-    ctx.strokeStyle = "#b07948"; ctx.lineWidth = 2.4; ctx.lineCap = "round";
+    // nos — výrazný, ostrý
+    ctx.strokeStyle = "#b07948"; ctx.lineWidth = 2.4; ctx.lineCap = "butt";
     ctx.beginPath();
     ctx.moveTo(50, 48);
-    ctx.lineTo(47, 61);
-    ctx.quadraticCurveTo(50, 65, 54, 62);
+    ctx.lineTo(46, 61);
+    ctx.lineTo(54, 63);
     ctx.stroke();
+    ctx.lineCap = "round";
 
     // ústa
     this.drawMouth(ctx, e);
@@ -301,6 +335,19 @@
 
   /* ----------------------- pomocné kreslení ----------------------- */
 
+  // hranatý obrys hlavy — sdílený pro pleť i ruměnec
+  function headPath(ctx) {
+    ctx.beginPath();
+    ctx.moveTo(20, 20);
+    ctx.lineTo(16, 60);
+    ctx.lineTo(27, 84);
+    ctx.lineTo(38, 92);
+    ctx.lineTo(62, 92);
+    ctx.lineTo(73, 84);
+    ctx.lineTo(84, 60);
+    ctx.lineTo(80, 20);
+    ctx.closePath();
+  }
   function ellipse(ctx, cx, cy, rx, ry) {
     ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
   }
@@ -346,13 +393,13 @@
       ellipse(ctx, p.x - 1.4, p.y - 1.4, 0.9, 0.9);
     }
   }
-  // kapkovité sklo aviatorek
+  // hranaté sklo aviatorek (jako na tiskovkách)
   function teardrop(ctx, cx, cy) {
     ctx.beginPath();
-    ctx.moveTo(cx - 10, cy - 4);
-    ctx.quadraticCurveTo(cx, cy - 8, cx + 10, cy - 4);
-    ctx.quadraticCurveTo(cx + 10, cy + 7, cx + 2, cy + 9);
-    ctx.quadraticCurveTo(cx - 8, cy + 9, cx - 10, cy - 4);
+    ctx.moveTo(cx - 11, cy - 6);
+    ctx.lineTo(cx + 11, cy - 6);
+    ctx.lineTo(cx + 9, cy + 9);
+    ctx.lineTo(cx - 6, cy + 9);
     ctx.closePath();
     ctx.fill();
   }
