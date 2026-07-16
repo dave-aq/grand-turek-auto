@@ -83,7 +83,7 @@
     base: {
       H: "#d9a441", h: "#a87b2c", L: "#edc76f",
       S: "#ecb489", s: "#cf9464", w: "#f6cf9f",
-      E: "#f2f2f2", I: "#4f7d9e", B: "#8a6430",
+      E: "#f6f6f6", I: "#5e93b8", p: "#1c2430", B: "#7a5626",
       k: "#3a2e20", M: "#7c3428", T: "#ffffff",
       N: "#243250", n: "#172138", C: "#eef0f2", P: "#e07a8a"
     }
@@ -116,11 +116,11 @@
     "...sShSSSSSSSSSSSSSSSSSSSSSSshSs...",
     "...sShSSSSSSSSSSSSSSSSSSSSSSshSs...",
     "...sShSSSSSSSSSSSSSSSSSSSSSSshSs...",
-    "....ssSSSSSSSSSwSsSSSSSSSSSSsss....",
-    "....ssSSSSSSSSSwSsSSSSSSSSSSsss....",
-    ".....sSSSSSSSSSwSsSSSSSSSSSSs......",
-    ".....sSSsSSSSSSwSsSSSSSSsSSSs......",
-    ".....sSSsSSSSSSwSssSSSSSsSSSs......",
+    "....ssSSSSSSSSSSSsSSSSSSSSSSsss....",
+    "....ssSSSSSSSSSSSsSSSSSSSSSSsss....",
+    ".....sSSSSSSSSSSSsSSSSSSSSSSs......",
+    ".....sSSSSSSSSSSSsSSSSSSSSSSs......",
+    ".....sSSsSSSSSSSSssSSSSSsSSSs......",
     ".....sSSsSSSSSkssskSSSSSsSSSs......",
     ".....sSSSsSSSSSSSSSSSSSsSSSSs......",
     ".....sSSSsSSSSSSSSSSSSSsSSSSs......",
@@ -143,44 +143,47 @@
 
   // záplaty výrazů (kreslí se přes základ, '.' = beze změny)
   var PATCH = {
-    browsFlat:   { x: 9,  y: 14, rows: ["BBBBBB.....BBBBBB"] },
-    browsRaised: { x: 9,  y: 13, rows: ["BBBBBB.....BBBBBB"] },
-    browsRage:   { x: 8,  y: 12, rows: [
-      "Bk...............kB",
-      ".BBk...........kBB.",
-      "...BBk.......kBB...",
-      ".....Bk.....kB....."
+    browsFlat:   { x: 10, y: 13, rows: ["BBBBBBB..BBBBBBB"] },
+    browsRaised: { x: 10, y: 12, rows: ["BBBBBBB..BBBBBBB"] },
+    browsRage:   { x: 9,  y: 11, rows: [
+      "Bk..............kB",
+      ".BBk..........kBB.",
+      "...BBk......kBB...",
+      ".....Bk....kB....."
     ] },
-    browsPain:   { x: 9,  y: 13, rows: [
-      "..kBBB.....BBBk..",
-      "kBB...........BBk"
+    browsPain:   { x: 10, y: 12, rows: [
+      "..kBBBB..BBBBk..",
+      "kBB..........BBk"
     ] },
-    eyesOpen:    { x: 10, y: 16, rows: [
-      "kEEEEk...kEEEEk",
-      "kEIIEk...kEIIEk"
+    eyesOpen:    { x: 10, y: 15, rows: [
+      ".kkkkk....kkkkk.",
+      "EEIpIEE..EEIpIEE"
     ] },
-    eyesClosed:  { x: 10, y: 17, rows: ["kkkkkk...kkkkkk"] },
-    eyesNarrow:  { x: 10, y: 17, rows: ["kEIIEk...kEIIEk"] },
-    eyesWide:    { x: 10, y: 15, rows: [
-      "kEEEEk...kEEEEk",
-      "kEIIEk...kEIIEk",
-      "kEEEEk...kEEEEk"
+    eyesClosed:  { x: 10, y: 16, rows: ["kkkkkkk..kkkkkkk"] },
+    eyesNarrow:  { x: 10, y: 15, rows: [
+      "kkkkkkk..kkkkkkk",
+      ".EIpIE....EIpIE."
     ] },
-    eyesSqueeze: { x: 10, y: 16, rows: [
-      "kk..kk...kk..kk",
-      "..kk.......kk.."
+    eyesWide:    { x: 10, y: 14, rows: [
+      ".kkkkk....kkkkk.",
+      "EEIpIEE..EEIpIEE",
+      "EEEEEEE..EEEEEEE"
     ] },
-    eyesX:       { x: 10, y: 15, rows: [
-      "k...k.....k...k",
-      ".k.k.......k.k.",
-      "..k.........k..",
-      ".k.k.......k.k.",
-      "k...k.....k...k"
+    eyesSqueeze: { x: 10, y: 15, rows: [
+      "kk...kk..kk...kk",
+      "..kkk......kkk.."
     ] },
-    winkEye:     { x: 10, y: 17, rows: ["kkkkkk"] },
-    winkOpen:    { x: 20, y: 16, rows: [
-      "kEEEEk",
-      "kEIIEk"
+    eyesX:       { x: 10, y: 14, rows: [
+      "k...k......k...k",
+      ".k.k........k.k.",
+      "..k..........k..",
+      ".k.k........k.k.",
+      "k...k......k...k"
+    ] },
+    winkEye:     { x: 10, y: 16, rows: ["kkkkkkk"] },
+    winkOpen:    { x: 19, y: 15, rows: [
+      ".kkkkk.",
+      "EEIpIEE"
     ] },
     mouthSmirk:  { x: 13, y: 27, rows: [
       ".........k",

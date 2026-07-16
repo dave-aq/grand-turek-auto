@@ -392,13 +392,15 @@
     var dmg = (3 + relKmh * 0.08) * (c.type.tough || 1);
 
     if (c.type.ambulance) {
+      // skandál, ale hlasy to jen přidá — Turek prostě nemůže prohrát
       dmg *= 1.4;
-      score = Math.max(0, score - 500);
+      score += 500;
       combo = 0; comboTimer = 0;
       face.trigger("panic");
       audio.penalty();
       audio.crash(relKmh / 150);
-      addBanner("SANITKA! SKANDÁL! −500", "#e01414", 46, 3.2, 118, true);
+      addBanner("SANITKA! SKANDÁL! +500", "#e01414", 46, 3.2, 118, true);
+      addFloat(fx, fy - 30, "Preference rostou?!", "#ffd23f");
     } else {
       var prevM = mult();
       combo += 1;
@@ -1329,9 +1331,15 @@
       ctx.font = "bold 26px Arial";
       ctx.lineWidth = 5;
       ctx.strokeStyle = "#3d1a02";
-      ctx.strokeText("DOJEZDOVÁ TÍSEŇ!", W / 2, 308);
+      ctx.strokeText("DOJEZDOVÁ TÍSEŇ!", W / 2, 300);
       ctx.fillStyle = "#ffb62e";
-      ctx.fillText("DOJEZDOVÁ TÍSEŇ!", W / 2, 308);
+      ctx.fillText("DOJEZDOVÁ TÍSEŇ!", W / 2, 300);
+      ctx.font = "italic bold 15px Arial";
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "#000";
+      ctx.strokeText("moštárna to jistí", W / 2, 322);
+      ctx.fillStyle = "#e8e8e8";
+      ctx.fillText("moštárna to jistí", W / 2, 322);
       ctx.restore();
     }
     for (var i = 0; i < banners.length; i++) {

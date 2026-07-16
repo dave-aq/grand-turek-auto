@@ -42,7 +42,9 @@ Hra je statická, takže funguje i na GitHub Pages
   přepne **REŽIM OSTRAVA** s trojnásobným přílivem. Zatáčení rychlost žere,
   takže to udržíš jen rovně.
 - Elektromobily jedou potichu, nesou nejvíc hlasů a bonus +150.
-- **Sanitkám se vyhýbej** — −500 hlasů a krvavý titulek přes obrazovku.
+- Náraz do **sanitky** = krvavý titulek SKANDÁL přes obrazovku… a +500
+  hlasů. Turek prostě nemůže prohrát. (Karoserie to ovšem schytá nejvíc
+  a kombo spadne.)
 - Skoro zničené auto hlásí **DOJEZDOVOU TÍSEŇ**; hra končí, když je
   karoserie na šrot.
 - Opravit karoserii jde v **MOŠTÁRNĚ** („rozhodně ne garáž") u silnice:
