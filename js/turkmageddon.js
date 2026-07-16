@@ -1270,9 +1270,10 @@
   var elBest = document.getElementById("np-best");
 
   var HEADLINES = [
+    "NEJEZDĚTE JAK DEBILOVÉ!",
     "PILOT T. DOJEZDIL!",
     "ZRCÁTKO SE UŽ NEŠKLEBÍ",
-    "VETERÁN NA ŠROTIŠTI, HLASY V TRAPU",
+    "HRANATÁ LEGENDA NA ŠROTIŠTI, HLASY V TRAPU",
     "BUDÍKY SPADLY NA NULU",
     "KOMENTÁTOŘI: „TO SE NEDALO PŘEHLÉDNOUT“"
   ];
@@ -1298,7 +1299,6 @@
     if (e.code === "KeyM") audio.toggleMute();
     if (e.code === "Enter" && state === "menu") start();
     if (e.code === "KeyR" && state !== "menu") restart();
-    if (e.code === "Escape") location.href = "index.html";
   });
   window.addEventListener("keyup", function (e) {
     if (e.code in KEYMAP) input[KEYMAP[e.code]] = false;

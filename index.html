@@ -2,41 +2,44 @@
 <html lang="cs">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Grand Turek Auto</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Turkmageddon — Grand Turek Auto</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="menu-page">
-<div class="menu-wrap">
-  <h1 class="menu-title">GRAND TUREK AUTO</h1>
-  <p class="tagline">Pravidla silničního provozu jsou jen doporučení. Vyber si koncept:</p>
+<body>
+<div id="game-wrap">
+  <canvas id="game" width="640" height="480"></canvas>
 
-  <div class="cards">
-    <a class="card a" href="gta.html">
-      <div class="kicker">KONCEPT A</div>
-      <h2>GTA</h2>
-      <p>Pohled shora jako v GTA 1. Tři pruhy, semafory, komba
-         a <b>Turkocam</b> — šklebící se obličej v Doom panelu.</p>
-      <div class="key">stiskni <b>1</b></div>
-    </a>
-
-    <a class="card b" href="turkmageddon.html">
-      <div class="kicker">KONCEPT B</div>
-      <h2>TURKMAGEDDON</h2>
-      <p>First-person kokpit hranatého teréňáku s hvězdou: volant, budíky
-         a grimasy ve <b>zpětném zrcátku</b>. Pseudo-3D silnice, kopce, zatáčky.</p>
-      <div class="key">stiskni <b>2</b></div>
-    </a>
+  <div id="overlay-start" class="overlay">
+    <h1>TURKMAGEDDON</h1>
+    <p class="tagline">Pravidla silničního provozu jsou jen doporučení.</p>
+    <div class="controls">
+      <p><b>&larr;/&rarr;</b> nebo <b>A/D</b> — řízení</p>
+      <p><b>&uarr;</b> nebo <b>W</b> — plyn &nbsp;·&nbsp; <b>&darr;</b> nebo <b>S</b> — brzda</p>
+      <p><b>M</b> — zvuk &nbsp;·&nbsp; <b>R</b> — restart</p>
+    </div>
+    <p class="rules">Bourej auta, projížděj na červenou, sbírej <b>preferenční hlasy</b>.<br>
+      Od 200 km/h běží <b>PLYNULÁ JÍZDA</b>, na 325 <b>REŽIM OSTRAVA</b>.<br>
+      Sanitkám se vyhýbej — média nespí!</p>
+    <button id="btn-start">STARTUJEME (Enter)</button>
+    <p class="disclaimer">Satirická parodie. Všechny postavy jsou karikatury,
+      veškerá podobnost je nadsázka. Bourejte pouze virtuálně.</p>
   </div>
 
-  <p class="disclaimer">Satirická parodie. Všechny postavy jsou karikatury,
-    veškerá podobnost je nadsázka. Bourejte pouze virtuálně.</p>
+  <div id="overlay-over" class="overlay hidden">
+    <div class="newspaper">
+      <div class="np-head">DENÍK ŠROT</div>
+      <div class="np-date">mimořádné vydání &nbsp;·&nbsp; 5 Kč</div>
+      <h2 id="np-headline">PILOT T. DOJEZDIL!</h2>
+      <p id="np-stats">…</p>
+      <p id="np-best" class="np-best"></p>
+    </div>
+    <button id="btn-restart">JEŠTĚ JEDNO KOLO (R)</button>
+  </div>
 </div>
-<script>
-  window.addEventListener("keydown", function (e) {
-    if (e.key === "1") location.href = "gta.html";
-    if (e.key === "2") location.href = "turkmageddon.html";
-  });
-</script>
+
+<script src="js/face.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/turkmageddon.js"></script>
 </body>
 </html>
