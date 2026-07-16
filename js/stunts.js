@@ -19,7 +19,7 @@
   var FOV = 100;
   var CAM_DEPTH = 1 / Math.tan((FOV / 2) * Math.PI / 180);
   var PLAYER_Z = CAM_H * CAM_DEPTH;
-  var MAXS = 200;                  // km/h
+  var MAXS = 250;                  // km/h
   var UNITS = 55;                  // světové jednotky za s na 1 km/h
   var CENTRIFUGAL = 0.28;
   var FOG_DENSITY = 5;
@@ -145,6 +145,7 @@
   var position, prevPos, speed, playerX, wheelAngle;
   var health, lastTier, score, best, combo, comboTimer, wrecksN, distanceM, timeT;
   var cars, floats, sparks, cracks, banners, shake, rageCd, over, mtOff;
+  var bombsActive, bombsTotal, bombsCarry;
 
   best = parseInt(localStorage.getItem("gta_best_stunts") || "0", 10);
 
@@ -154,6 +155,7 @@
     wrecksN = 0; distanceM = 0; timeT = 0;
     floats = []; sparks = []; cracks = []; banners = [];
     shake = 0; rageCd = 0; mtOff = 0;
+    bombsActive = false; bombsTotal = 0; bombsCarry = 0;
     over = false;
     face.reset();
     cars = [];
@@ -187,13 +189,31 @@
   function update(dt) {
     timeT += dt;
 
+    var steer = (input.left ? -1 : 0) + (input.right ? 1 : 0);
+
     if (input.up) speed += 60 * dt;
     else if (input.down) speed -= 125 * dt;
     else speed -= 12 * dt;
 
+    // zatáčení žere rychlost — BOMBY udržíš jen rovně
+    if (steer !== 0) speed -= dt * (20 + 70 * (speed / MAXS));
+
     var offroad = Math.abs(playerX) > 1.02;
     if (offroad && speed > 70) speed -= 100 * dt;
     speed = Math.max(0, Math.min(MAXS, speed));
+
+    // BOMBY: držení maximálky sype hlasy (100/s)
+    if (speed >= MAXS - 0.5) {
+      if (!bombsActive) { bombsActive = true; bombsTotal = 0; bombsCarry = 0; }
+      bombsCarry += 100 * dt;
+      var whole = Math.floor(bombsCarry);
+      if (whole > 0) { score += whole; bombsTotal += whole; bombsCarry -= whole; }
+    } else if (bombsActive) {
+      bombsActive = false;
+      if (bombsTotal > 0) {
+        addFloat(W / 2, H * 0.35, "Bomby! +" + bombsTotal + " hlasů", "#ffd23f");
+      }
+    }
 
     var speedPct = speed / MAXS;
     prevPos = position;
@@ -202,7 +222,6 @@
 
     var base = findSegment(position);
 
-    var steer = (input.left ? -1 : 0) + (input.right ? 1 : 0);
     var dx = dt * 1.8 * speedPct;
     playerX += steer * dx;
     playerX -= dx * speedPct * base.curve * CENTRIFUGAL;
@@ -1120,8 +1139,30 @@
     ctx.restore();
   }
 
-  // velké vyskakovací nápisy (elektromobil, sanitka s krví)
+  // velké vyskakovací nápisy (elektromobil, sanitka s krví, kombo, BOMBY)
   function drawBanners() {
+    // trvalý banner BOMBY, dokud hráč drží maximálku
+    if (bombsActive) {
+      var pulse = 1 + 0.07 * Math.sin(timeT * 12);
+      ctx.save();
+      ctx.translate(W / 2 + (Math.random() - 0.5) * 3, 128);
+      ctx.scale(pulse, pulse);
+      ctx.textAlign = "center";
+      ctx.lineJoin = "round";
+      ctx.font = "bold 54px Arial";
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = "#7a1010";
+      ctx.strokeText("BOMBY!", 0, 0);
+      ctx.fillStyle = "#ffd23f";
+      ctx.fillText("BOMBY!", 0, 0);
+      ctx.font = "bold 17px Arial";
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "#000";
+      ctx.strokeText("+" + bombsTotal + " hlasů", 0, 24);
+      ctx.fillStyle = "#fff";
+      ctx.fillText("+" + bombsTotal + " hlasů", 0, 24);
+      ctx.restore();
+    }
     for (var i = 0; i < banners.length; i++) {
       var b = banners[i];
       var age = b.maxLife - b.life;

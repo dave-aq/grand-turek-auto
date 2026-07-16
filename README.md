@@ -44,6 +44,8 @@ Hra je statická, takže funguje i na GitHub Pages
 - Nabourané auto = preferenční hlasy (dražší auto = víc hlasů).
 - Řetěz bouraček do 4 sekund = **kombo** (násobič až ×5, od ×3 sluneční brýle).
 - Projetí na červenou = +200 hlasů a spiklenecké mrknutí.
+- Turkmageddon: drž maximálku 250 km/h a naskočí **BOMBY!** — hlasy
+  přibývají, dokud rychlost udržíš (zatáčení rychlost žere).
 - Elektromobily jedou potichu a nesou nejvíc hlasů (ve STUNTS módu
   s bonusem +150 a velkým oznámením).
 - **Sanitkám se vyhýbej** — −500 hlasů, mediální skandál (ve STUNTS módu
