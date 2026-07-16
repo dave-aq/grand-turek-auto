@@ -16,6 +16,7 @@ body {
 
 #game-wrap {
   position: relative;
+  touch-action: none;
 }
 
 #game {
@@ -72,6 +73,48 @@ button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
   font-size: 13px;
   letter-spacing: 0.5px;
   margin-top: 3px;
+}
+
+/* Dotykové ovládání — zobrazí se jen na dotykových zařízeních */
+#touch-ui { display: none; }
+body.touch #touch-ui { display: block; }
+
+.touch-note { display: none; font-size: 14px; color: #ddd; }
+body.touch .touch-note { display: block; }
+
+.tbtn {
+  position: absolute;
+  z-index: 6;
+  width: 70px;
+  height: 70px;
+  border-radius: 14px;
+  border: 2px solid #000;
+  background: rgba(18, 18, 24, 0.55);
+  color: #ffd23f;
+  font: bold 26px Arial, sans-serif;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6);
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+.tbtn:hover { transform: none; box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6); }
+.tbtn:active {
+  background: rgba(255, 210, 63, 0.3);
+  transform: none;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6);
+}
+#t-left  { left: 12px;  bottom: 12px; }
+#t-right { left: 92px;  bottom: 12px; }
+#t-gas   { right: 12px; bottom: 12px; }
+#t-brake { right: 92px; bottom: 12px; }
+.tbtn-pause {
+  top: 10px;
+  right: 10px;
+  width: 46px;
+  height: 46px;
+  font-size: 15px;
 }
 
 .disclaimer {

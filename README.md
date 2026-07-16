@@ -30,6 +30,9 @@ Hra je statická, takže funguje i na GitHub Pages
 | R | restart |
 | Esc | pauza |
 
+Na dotykových zařízeních se automaticky zobrazí tlačítka:
+**◀ ▶** řízení (vlevo), **▲** plyn a **▼** brzda (vpravo), **❚❚** pauza.
+
 ## Pravidla
 
 - Nabourané auto = preferenční hlasy (dražší auto = víc hlasů).

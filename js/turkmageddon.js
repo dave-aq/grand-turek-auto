@@ -1455,15 +1455,17 @@
     if (e.code === "KeyM") audio.toggleMute();
     if (e.code === "Enter" && state === "menu") start();
     if (e.code === "KeyR" && state !== "menu") restart();
-    if (e.code === "Escape") {
-      if (state === "playing") {
-        state = "paused";
-        audio.setEngine(0, false);
-      } else if (state === "paused") {
-        state = "playing";
-      }
-    }
+    if (e.code === "Escape") togglePause();
   });
+
+  function togglePause() {
+    if (state === "playing") {
+      state = "paused";
+      audio.setEngine(0, false);
+    } else if (state === "paused") {
+      state = "playing";
+    }
+  }
   window.addEventListener("keyup", function (e) {
     if (e.code in KEYMAP) input[KEYMAP[e.code]] = false;
   });
@@ -1471,9 +1473,37 @@
   document.getElementById("btn-start").addEventListener("click", start);
   document.getElementById("btn-restart").addEventListener("click", restart);
 
+  // dotykové ovládání pro telefony
+  var isTouch = ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
+  if (isTouch) document.body.classList.add("touch");
+
+  function bindHold(id, key) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("pointerdown", function (e) {
+      e.preventDefault();
+      input[key] = true;
+      try { el.setPointerCapture(e.pointerId); } catch (err) { /* syntetické eventy */ }
+    });
+    function release() { input[key] = false; }
+    el.addEventListener("pointerup", release);
+    el.addEventListener("pointercancel", release);
+    el.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+  }
+  bindHold("t-left", "left");
+  bindHold("t-right", "right");
+  bindHold("t-gas", "up");
+  bindHold("t-brake", "down");
+  document.getElementById("t-pause").addEventListener("click", togglePause);
+
+  function clearInput() {
+    input.left = input.right = input.up = input.down = false;
+  }
+
   function start() {
     audio.init();
     if (audio.ctx && audio.ctx.state === "suspended") audio.ctx.resume();
+    clearInput();
     elStart.classList.add("hidden");
     state = "playing";
   }
@@ -1481,6 +1511,7 @@
   function restart() {
     audio.init();
     reset();
+    clearInput();
     elOver.classList.add("hidden");
     state = "playing";
   }
@@ -1541,9 +1572,10 @@
     ctx.fillText("PAUZA", W / 2, 210);
     ctx.font = "bold 16px Arial";
     ctx.lineWidth = 4;
-    ctx.strokeText("Esc — pokračovat  ·  R — restart", W / 2, 244);
+    var hint = isTouch ? "❚❚ — pokračovat" : "Esc — pokračovat  ·  R — restart";
+    ctx.strokeText(hint, W / 2, 244);
     ctx.fillStyle = "#e8e8e8";
-    ctx.fillText("Esc — pokračovat  ·  R — restart", W / 2, 244);
+    ctx.fillText(hint, W / 2, 244);
   }
   requestAnimationFrame(frame);
 })();
