@@ -126,6 +126,11 @@ zobrazení (~600 ms), bolest přerušuje vše (jako v Doomu).
 > **Stav:** prototyp postaven (`stunts.html` + `js/stunts.js`) — pseudo-3D
 > silnice se zatáčkami a kopci, provoz, kokpit s volantem a budíky, grimasy
 > ve zpětném zrcátku (sdílený `face.js`). Výběr konceptu je v úvodním menu.
+> Vůz hráče je pocta Mercedesu třídy G (hranatá silueta, rezerva na zádi,
+> blinkry na blatnících; kokpit podle moderní palubovky G — kruhové výdechy,
+> widescreen štít, volant s hvězdou). Zvuk motoru je hluboký V8 teréňáku.
+> Semafory ve STUNTS jsou per pruh, elektromobily mají bonusový banner,
+> sanitka krvácející titulek.
 
 Druhá varianta inspirovaná DOS klasikou **Stunts (1990)**: pohled z kokpitu,
 vidět je volant, palubní deska a **zpětné zrcátko, ve kterém sedí řidičova tvář

@@ -85,10 +85,13 @@
       });
     }
 
-    // semafory
+    // semafory — každý pruh má vlastní náhodnou fázi
     var g = 220;
     while (g < N - 120) {
-      var ga = { seg: segments[g], z: g * SEG_L, off: Math.random() * 7.7 };
+      var ga = {
+        seg: segments[g], z: g * SEG_L,
+        offs: [Math.random() * 7.7, Math.random() * 7.7, Math.random() * 7.7]
+      };
       gantries.push(ga);
       gantryBySeg[g] = ga;
       g += 260 + Math.floor(Math.random() * 180);
@@ -116,7 +119,7 @@
 
   var position, prevPos, speed, playerX, wheelAngle;
   var health, lastTier, score, best, combo, comboTimer, wrecksN, distanceM, timeT;
-  var cars, floats, sparks, cracks, shake, rageCd, over, mtOff;
+  var cars, floats, sparks, cracks, banners, shake, rageCd, over, mtOff;
 
   best = parseInt(localStorage.getItem("gta_best_stunts") || "0", 10);
 
@@ -124,7 +127,8 @@
     position = 0; prevPos = 0; speed = 0; playerX = 0; wheelAngle = 0;
     health = 100; lastTier = 0; score = 0; combo = 0; comboTimer = 0;
     wrecksN = 0; distanceM = 0; timeT = 0;
-    floats = []; sparks = []; cracks = []; shake = 0; rageCd = 0; mtOff = 0;
+    floats = []; sparks = []; cracks = []; banners = [];
+    shake = 0; rageCd = 0; mtOff = 0;
     over = false;
     face.reset();
     cars = [];
@@ -246,7 +250,9 @@
       var ga = gantries[g];
       var relBefore = (ga.z - (prevPos + PLAYER_Z) + trackLen) % trackLen;
       if (relBefore < travel) {
-        if (lightState(timeT + ga.off) === "red" && speed > 25) {
+        // rozhoduje semafor pruhu, kterým hráč zrovna projíždí
+        var lane = playerX < -0.33 ? 0 : playerX > 0.33 ? 2 : 1;
+        if (lightState(timeT + ga.offs[lane]) === "red" && speed > 25) {
           score += 200;
           face.trigger("redlight");
           audio.ding();
@@ -266,6 +272,7 @@
       fl.y -= 26 * dt; fl.life -= dt;
       if (fl.life <= 0) floats.splice(f, 1);
     }
+    updateBanners(dt);
 
     shake = Math.max(0, shake - dt);
     mtOff -= base.curve * speedPct * dt * 1.4;
@@ -300,18 +307,22 @@
       face.trigger("panic");
       audio.penalty();
       audio.crash(relKmh / 150);
-      addFloat(fx, fy - 30, "SANITKA! SKANDÁL! −500", "#ff2222");
+      addBanner("SANITKA! SKANDÁL! −500", "#e01414", 46, 3.2, 118, true);
     } else {
       combo += 1;
       comboTimer = 4;
       var m = mult();
       var gain = c.type.votes * m;
+      if (c.type.ev) gain += 150;              // bonus za elektromobil
       score += gain;
       wrecksN += 1;
       face.trigger("kill");
       audio.crash(relKmh / 150);
       addFloat(fx, fy - 30, "+" + gain + " hlasů" + (m > 1 ? " ×" + m : ""), "#7dff6e");
-      if (c.type.ev) addFloat(fx, fy - 8, "Emise −100 %?", "#3fc1a9");
+      if (c.type.ev) {
+        addBanner("⚡ ELEKTROMOBIL! +" + gain, "#5ff0d4", 32, 2.2, 152, false);
+        addFloat(fx, fy - 8, "Emise −100 %?", "#3fc1a9");
+      }
     }
 
     health -= dmg;
@@ -338,6 +349,41 @@
 
   function addFloat(x, y, text, color) {
     floats.push({ x: x, y: y, text: text, color: color, life: 1.4 });
+  }
+
+  function addBanner(text, color, size, life, y, blood) {
+    var b = { text: text, color: color, size: size, life: life, maxLife: life,
+              y: y, shake: blood, drips: null };
+    if (blood) {
+      ctx.save();
+      ctx.font = "bold " + size + "px Arial";
+      var tw = ctx.measureText(text).width;
+      ctx.restore();
+      b.drips = [];
+      for (var i = 0; i < 10; i++) {
+        b.drips.push({
+          x: -tw / 2 + 12 + Math.random() * (tw - 24),
+          len: 0,
+          v: 22 + Math.random() * 42,
+          max: 26 + Math.random() * 70
+        });
+      }
+    }
+    banners.push(b);
+  }
+
+  function updateBanners(dt) {
+    for (var i = banners.length - 1; i >= 0; i--) {
+      var b = banners[i];
+      b.life -= dt;
+      if (b.drips) {
+        for (var d = 0; d < b.drips.length; d++) {
+          var dr = b.drips[d];
+          dr.len = Math.min(dr.max, dr.len + dr.v * dt);
+        }
+      }
+      if (b.life <= 0) banners.splice(i, 1);
+    }
   }
 
   function spawnSparks(x, y) {
@@ -466,6 +512,7 @@
     ctx.globalAlpha = 1;
 
     drawCockpit();
+    drawBanners();
     ctx.restore();
   }
 
@@ -563,17 +610,20 @@
     ctx.fillRect(rx - pw / 2, p.y - h, pw, h);
     ctx.fillRect(lx - pw / 2, p.y - h, rx - lx + pw, Math.max(2, u * 100));
 
-    // budka se světly uprostřed
-    var bw = u * 150, bh = u * 400;
-    if (bw > 5) {
-      var bx = p.x - bw / 2, by = p.y - h + u * 100;
-      ctx.fillStyle = "#1d1d20";
-      ctx.fillRect(bx, by, bw, bh);
-      var st = lightState(timeT + ga.off);
-      var r = bw * 0.28;
-      circle(p.x, by + bh * 0.2, r, st === "red" ? "#ff3131" : "#4a1414");
-      circle(p.x, by + bh * 0.5, r, st === "orange" ? "#ffb62e" : "#4a3a12");
-      circle(p.x, by + bh * 0.8, r, st === "green" ? "#42e05c" : "#12421c");
+    // budka se světly nad každým pruhem — každý pruh svítí jinak
+    var bw = u * 130, bh = u * 380;
+    if (bw > 4) {
+      for (var li = 0; li < 3; li++) {
+        var cx2 = p.x + p.w * (-0.66 + 0.66 * li);
+        var bx = cx2 - bw / 2, by = p.y - h + u * 100;
+        ctx.fillStyle = "#1d1d20";
+        ctx.fillRect(bx, by, bw, bh);
+        var st = lightState(timeT + ga.offs[li]);
+        var r = bw * 0.26;
+        circle(cx2, by + bh * 0.2, r, st === "red" ? "#ff3131" : "#4a1414");
+        circle(cx2, by + bh * 0.5, r, st === "orange" ? "#ffb62e" : "#4a3a12");
+        circle(cx2, by + bh * 0.8, r, st === "green" ? "#42e05c" : "#12421c");
+      }
     }
     ctx.restore();
   }
@@ -663,112 +713,177 @@
       }
     }
 
-    // palubní deska — ořechové dřevo
-    ctx.fillStyle = "#241a12";
-    ctx.fillRect(0, DASH_TOP, W, H - DASH_TOP);
-    ctx.strokeStyle = "rgba(140,95,50,0.3)";
-    ctx.lineWidth = 2;
-    for (var wgl = 0; wgl < 4; wgl++) {
-      ctx.beginPath();
-      ctx.moveTo(0, DASH_TOP + 26 + wgl * 26);
-      ctx.quadraticCurveTo(W / 2, DASH_TOP + 14 + wgl * 28, W, DASH_TOP + 26 + wgl * 26);
-      ctx.stroke();
-    }
-    ctx.fillStyle = "#cfd6dd";
-    ctx.fillRect(0, DASH_TOP, W, 5);
-    ctx.fillStyle = "rgba(0,0,0,0.4)";
-    ctx.fillRect(0, DASH_TOP + 5, W, 3);
+    // kapota G-čka s blinkry na blatnících (z kokpitu jsou vidět)
+    ctx.fillStyle = "#26282c";
+    ctx.beginPath();
+    ctx.moveTo(36, DASH_TOP); ctx.lineTo(W - 36, DASH_TOP);
+    ctx.lineTo(W - 78, DASH_TOP - 30); ctx.lineTo(78, DASH_TOP - 30);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = "#3a3e44"; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(78, DASH_TOP - 29); ctx.lineTo(W - 78, DASH_TOP - 29);
+    ctx.stroke();
+    blinkerPod(96, DASH_TOP - 30);
+    blinkerPod(W - 96, DASH_TOP - 30);
 
-    // budíky
-    drawGauge(150, 416, 46, Math.min(1, speed / MAXS), "km/h", 0.85, Math.round(speed));
+    // palubní deska — černá kůže s prošitím
+    ctx.fillStyle = "#1b1c1f";
+    ctx.fillRect(0, DASH_TOP, W, H - DASH_TOP);
+    ctx.fillStyle = "#0e0f11";
+    ctx.fillRect(0, DASH_TOP, W, 4);
+    ctx.strokeStyle = "rgba(200,200,210,0.16)";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 4]);
+    line(0, DASH_TOP + 9, W, DASH_TOP + 9);
+    ctx.setLineDash([]);
+
+    // levý hliníkový panel s kruhovými výdechy
+    rr(24, 366, 150, 58, 29, "#b9c0c7");
+    drawVent(64, 395, 22);
+    drawVent(134, 395, 22);
+
+    // přístrojový štít (widescreen se dvěma kulatými budíky)
+    rr(198, 358, 244, 64, 10, "#0a0b0d");
+    ctx.strokeStyle = "#4c4f55"; ctx.lineWidth = 2;
+    ctx.beginPath(); roundRectPath(198, 358, 244, 64, 10); ctx.stroke();
+    drawDial(240, 390, 24, Math.min(1, speed / MAXS));
     var revs = over ? 0 : 0.12 + (speed / MAXS) * 0.72 +
       Math.sin(timeT * 31) * 0.02 * (speed / MAXS);
-    drawGauge(490, 416, 46, Math.min(1, revs), "ot/min", 0.8, null);
-
-    // stav vozu
-    ctx.fillStyle = "#9aa0a8";
-    ctx.font = "bold 10px Arial";
+    drawDial(400, 390, 24, Math.min(1, revs));
     ctx.textAlign = "center";
-    ctx.fillText("KAROSERIE", 320, DASH_TOP + 15);
+    ctx.fillStyle = "#e8e8e8"; ctx.font = "bold 22px Arial";
+    ctx.fillText(String(Math.round(speed)), 320, 392);
+    ctx.fillStyle = "#9aa0a8"; ctx.font = "9px Arial";
+    ctx.fillText("km/h", 320, 403);
+    // stav karoserie jako proužek ve štítu
     ctx.fillStyle = "#0f0f12";
-    ctx.fillRect(250, DASH_TOP + 20, 140, 12);
-    var hw = Math.max(0, health / 100) * 136;
+    ctx.fillRect(284, 406, 72, 8);
     ctx.fillStyle = health > 50 ? "#42e05c" : health > 25 ? "#ffb62e" : "#ff3131";
-    ctx.fillRect(252, DASH_TOP + 22, hw, 8);
-    ctx.strokeStyle = "#4c4c55";
-    ctx.strokeRect(250.5, DASH_TOP + 20.5, 139, 11);
+    ctx.fillRect(286, 408, Math.max(0, health / 100) * 68, 4);
+
+    // infotainment displej vpravo — skóre jako palubní obrazovka
+    rr(470, 358, 160, 72, 8, "#0a0b0d");
+    ctx.strokeStyle = "#4c4f55"; ctx.lineWidth = 2;
+    ctx.beginPath(); roundRectPath(470, 358, 160, 72, 8); ctx.stroke();
+    drawStar(486, 372, 7);
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#9aa0a8"; ctx.font = "bold 10px Arial";
+    ctx.fillText("PREFERENČNÍ HLASY", 500, 376);
+    ctx.fillStyle = "#ffd23f"; ctx.font = "bold 22px Arial";
+    ctx.fillText(fmt(score), 484, 402);
+    if (comboTimer > 0 && combo > 1) {
+      ctx.fillStyle = "#ff8c42"; ctx.font = "bold 14px Arial";
+      ctx.fillText("KOMBO ×" + mult(), 484, 420);
+    } else {
+      ctx.fillStyle = "#6a6a74"; ctx.font = "10px Arial";
+      ctx.fillText("rekord: " + fmt(best), 484, 420);
+    }
+
+    // střední panel s výdechy pod displejem
+    rr(470, 436, 160, 38, 10, "#b9c0c7");
+    drawVent(505, 455, 13);
+    drawVent(550, 455, 13);
+    drawVent(595, 455, 13);
 
     drawWheel();
     drawMirror();
-    drawHud();
   }
 
-  function drawGauge(cx, cy, r, val01, label, redFrom, digital) {
+  function blinkerPod(cx, baseY) {
+    rr(cx - 9, baseY - 9, 18, 10, 3, "#26282c");
+    rr(cx - 6, baseY - 13, 12, 5, 2, "#ffb62e");
+  }
+
+  function drawVent(cx, cy, r) {
+    circle(cx, cy, r, "#8f979e");
+    circle(cx, cy, r - 2, "#1f2124");
+    ctx.strokeStyle = "#585d64"; ctx.lineWidth = 2;
+    for (var i = 0; i < 8; i++) {
+      var a = i * Math.PI / 4 + 0.4;
+      line(cx + Math.cos(a) * r * 0.35, cy + Math.sin(a) * r * 0.35,
+           cx + Math.cos(a) * (r - 4), cy + Math.sin(a) * (r - 4));
+    }
+    circle(cx, cy, r * 0.28, "#b9c0c7");
+  }
+
+  // trojcípá hvězda v kroužku (pocta předloze)
+  function drawStar(cx, cy, r) {
+    ctx.strokeStyle = "#b9c0c7"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = "#d9dee3";
+    for (var i = 0; i < 3; i++) {
+      var a = -Math.PI / 2 + i * (Math.PI * 2 / 3);
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * r * 0.92, cy + Math.sin(a) * r * 0.92);
+      ctx.lineTo(cx + Math.cos(a + 2.2) * r * 0.22, cy + Math.sin(a + 2.2) * r * 0.22);
+      ctx.lineTo(cx + Math.cos(a - 2.2) * r * 0.22, cy + Math.sin(a - 2.2) * r * 0.22);
+      ctx.closePath(); ctx.fill();
+    }
+  }
+
+  // moderní kulatý budík na displeji přístrojového štítu
+  function drawDial(cx, cy, r, val01) {
     var a0 = Math.PI * 0.75, a1 = Math.PI * 2.25;
 
-    ctx.fillStyle = "#101014";
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = "#cfd6dd"; ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    circle(cx, cy, r, "#101114");
+    ctx.strokeStyle = "#dfe3e8"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx, cy, r - 2, a0, a1); ctx.stroke();
+    ctx.strokeStyle = "#e02121"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(cx, cy, r - 2, a0 + (a1 - a0) * 0.82, a1); ctx.stroke();
 
-    // červené pole
-    ctx.strokeStyle = "#e02121"; ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r - 8, a0 + (a1 - a0) * redFrom, a1);
-    ctx.stroke();
-
-    // rysky
-    ctx.strokeStyle = "#d8d8d0"; ctx.lineWidth = 2;
-    for (var i = 0; i <= 8; i++) {
-      var a = a0 + (a1 - a0) * (i / 8);
-      ctx.beginPath();
-      ctx.moveTo(cx + Math.cos(a) * (r - 6), cy + Math.sin(a) * (r - 6));
-      ctx.lineTo(cx + Math.cos(a) * (r - 13), cy + Math.sin(a) * (r - 13));
-      ctx.stroke();
+    ctx.strokeStyle = "#8f979e"; ctx.lineWidth = 1.5;
+    for (var i = 0; i <= 6; i++) {
+      var a = a0 + (a1 - a0) * (i / 6);
+      line(cx + Math.cos(a) * (r - 3), cy + Math.sin(a) * (r - 3),
+           cx + Math.cos(a) * (r - 8), cy + Math.sin(a) * (r - 8));
     }
 
-    // ručička
     var an = a0 + (a1 - a0) * Math.max(0, Math.min(1, val01));
-    ctx.strokeStyle = "#ff5039"; ctx.lineWidth = 3; ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + Math.cos(an) * (r - 12), cy + Math.sin(an) * (r - 12));
-    ctx.stroke();
-    circle(cx, cy, 5, "#cfd6dd");
-
-    ctx.fillStyle = "#9aa0a8";
-    ctx.font = "bold 9px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText(label, cx, cy + r * 0.55);
-    if (digital !== null) {
-      ctx.fillStyle = "#e8e8e8";
-      ctx.font = "bold 13px Arial";
-      ctx.fillText(String(digital), cx, cy + r + 14);
-    }
+    ctx.strokeStyle = "#ff5039"; ctx.lineWidth = 2.5; ctx.lineCap = "round";
+    line(cx, cy, cx + Math.cos(an) * (r - 6), cy + Math.sin(an) * (r - 6));
+    circle(cx, cy, 3, "#dfe3e8");
   }
 
   function drawWheel() {
-    var cx = 320, cy = 562, R = 168;
+    var cx = 320, cy = 474, R = 132;
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(wheelAngle);
 
-    // dřevěný věnec
-    ctx.strokeStyle = "#3a2413"; ctx.lineWidth = 19;
+    // věnec — černá kůže, nahoře dřevěný segment jako na předloze
+    ctx.strokeStyle = "#101114"; ctx.lineWidth = 19;
     ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.stroke();
-    ctx.strokeStyle = "#5a3a20"; ctx.lineWidth = 13;
+    ctx.strokeStyle = "#26282e"; ctx.lineWidth = 13;
     ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.stroke();
-    ctx.strokeStyle = "rgba(255,255,255,0.12)"; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.arc(0, 0, R - 4, Math.PI * 1.1, Math.PI * 1.6); ctx.stroke();
+    ctx.strokeStyle = "#4a3018"; ctx.lineWidth = 13;
+    ctx.beginPath(); ctx.arc(0, 0, R, Math.PI * 1.22, Math.PI * 1.78); ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,0.15)"; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(0, 0, R - 3, Math.PI * 1.3, Math.PI * 1.6); ctx.stroke();
 
-    // paprsky (jen horní jsou vidět — střed volantu je pod obrazovkou)
-    ctx.strokeStyle = "#b9c0c7"; ctx.lineWidth = 10; ctx.lineCap = "round";
-    spoke(Math.PI * 1.3, R);
-    spoke(Math.PI * 1.7, R);
+    // tři paprsky (9–3–6) stříbrné
+    ctx.strokeStyle = "#b9c0c7"; ctx.lineWidth = 13; ctx.lineCap = "round";
+    spoke(Math.PI, R);
+    spoke(0, R);
+    spoke(Math.PI / 2, R);
+
+    // tlačítkové pody na vodorovných paprscích
+    rr(-88, -11, 34, 22, 6, "#17181b");
+    rr(54, -11, 34, 22, 6, "#17181b");
+    ctx.fillStyle = "#585d64";
+    ctx.fillRect(-82, -6, 9, 5); ctx.fillRect(-70, -6, 9, 5);
+    ctx.fillRect(-82, 2, 21, 4);
+    ctx.fillRect(60, -6, 9, 5); ctx.fillRect(72, -6, 9, 5);
+    ctx.fillRect(60, 2, 21, 4);
+
+    // náboj s hvězdou
+    circle(0, 0, 30, "#17181b");
+    ctx.strokeStyle = "#8f979e"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI * 2); ctx.stroke();
+    drawStar(0, 0, 21);
 
     // ruce: sako, manžeta, dlaň — „za deset dvě"
-    drawHand(Math.PI * 1.3, R);
-    drawHand(Math.PI * 1.7, R);
+    drawHand(Math.PI * 1.28, R);
+    drawHand(Math.PI * 1.72, R);
 
     ctx.restore();
   }
@@ -817,28 +932,51 @@
     ctx.restore();
   }
 
-  function drawHud() {
-    ctx.textAlign = "left";
-    outlineText("HLASY " + fmt(score), 14, 56, "bold 22px Arial", "#ffd23f");
-    if (comboTimer > 0 && combo > 1) {
-      outlineText("KOMBO ×" + mult(), 14, 80, "bold 17px Arial", "#ff8c42");
+  // velké vyskakovací nápisy (elektromobil, sanitka s krví)
+  function drawBanners() {
+    for (var i = 0; i < banners.length; i++) {
+      var b = banners[i];
+      var age = b.maxLife - b.life;
+      var alpha = b.life < 0.5 ? Math.max(0, b.life / 0.5) : 1;
+      var pop = 1 + Math.max(0, 0.5 - age * 3);
+      var bx = W / 2, by = b.y;
+      if (b.shake) {
+        bx += (Math.random() - 0.5) * 9;
+        by += (Math.random() - 0.5) * 7;
+      }
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(bx, by);
+      ctx.scale(pop, pop);
+      ctx.font = "bold " + b.size + "px Arial";
+      ctx.textAlign = "center";
+      ctx.lineJoin = "round";        // bez špičatých artefaktů na rozích glyfů
+      ctx.lineWidth = Math.max(4, b.size * 0.13);
+      ctx.strokeStyle = b.drips ? "#3d0303" : "#000";
+      ctx.strokeText(b.text, 0, 0);
+      ctx.fillStyle = b.color;
+      ctx.fillText(b.text, 0, 0);
+      if (b.drips) {
+        ctx.fillStyle = "#b00d0d";
+        for (var d = 0; d < b.drips.length; d++) {
+          var dr = b.drips[d];
+          ctx.fillRect(dr.x - 2, 4, 4, dr.len);
+          ctx.beginPath();
+          ctx.arc(dr.x, 4 + dr.len, 3.4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
     }
-    ctx.textAlign = "right";
-    outlineText("REKORD " + fmt(best), W - 14, 30, "bold 14px Arial", "#c9c9d4");
-  }
-
-  function outlineText(text, x, y, font, color) {
-    ctx.font = font;
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = "#000";
-    ctx.strokeText(text, x, y);
-    ctx.fillStyle = color;
-    ctx.fillText(text, x, y);
   }
 
   /* --------------------------- pomocníci --------------------------- */
 
   function lerp(a, b, t) { return a + (b - a) * t; }
+
+  function line(x1, y1, x2, y2) {
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  }
 
   function circle(x, y, r, color) {
     ctx.fillStyle = color;
@@ -941,6 +1079,9 @@
     elOver.classList.remove("hidden");
   }
 
+  // debug hook pro testy a ladění efektů z konzole
+  window.__gtaDebug = { addBanner: addBanner };
+
   var last = performance.now();
   function frame(now) {
     var dt = Math.min((now - last) / 1000, 0.05);
@@ -951,6 +1092,7 @@
       if (over) showGameOver();
     } else {
       face.update(dt, { health: health, sunglasses: false });
+      updateBanners(dt);
     }
 
     ctx.clearRect(0, 0, W, H);

@@ -21,25 +21,44 @@
     this.master.gain.value = 1;
     this.master.connect(this.ctx.destination);
 
-    // motor: saw + saw o oktávu níž, lowpass
+    // motor: hluboký V8 teréňáku — dva rozladěné saw hluboko, sinusový
+    // sub-bas pro váhu a pomalé LFO chvění pro „bublání" na volnoběh
     this.engineGain = this.ctx.createGain();
     this.engineGain.gain.value = 0;
     this.engineLp = this.ctx.createBiquadFilter();
     this.engineLp.type = "lowpass";
-    this.engineLp.frequency.value = 400;
+    this.engineLp.frequency.value = 180;
     this.engineGain.connect(this.engineLp);
     this.engineLp.connect(this.master);
 
     this.osc1 = this.ctx.createOscillator();
     this.osc1.type = "sawtooth";
-    this.osc1.frequency.value = 50;
+    this.osc1.frequency.value = 34;
     this.osc2 = this.ctx.createOscillator();
     this.osc2.type = "sawtooth";
-    this.osc2.frequency.value = 27;
+    this.osc2.frequency.value = 17.9;      // mírné rozladění → pomalé záznějí
+    this.sub = this.ctx.createOscillator();
+    this.sub.type = "sine";
+    this.sub.frequency.value = 17;
+    var subG = this.ctx.createGain();
+    subG.gain.value = 1.4;
     this.osc1.connect(this.engineGain);
     this.osc2.connect(this.engineGain);
+    this.sub.connect(subG);
+    subG.connect(this.engineGain);
     this.osc1.start();
     this.osc2.start();
+    this.sub.start();
+
+    // LFO moduluje hlasitost motoru — loping idle velkého osmiválce
+    this.lfo = this.ctx.createOscillator();
+    this.lfo.type = "sine";
+    this.lfo.frequency.value = 7;
+    this.lfoGain = this.ctx.createGain();
+    this.lfoGain.gain.value = 0.014;
+    this.lfo.connect(this.lfoGain);
+    this.lfoGain.connect(this.engineGain.gain);
+    this.lfo.start();
 
     // buffer bílého šumu pro rány
     var len = Math.floor(this.ctx.sampleRate * 0.5);
@@ -58,11 +77,13 @@
   AudioSys.prototype.setEngine = function (speed01, running) {
     if (!this.ctx) return;
     var t = this.ctx.currentTime;
-    var target = running ? 0.035 + speed01 * 0.03 : 0;
+    var target = running ? 0.055 + speed01 * 0.05 : 0;
     this.engineGain.gain.setTargetAtTime(target, t, 0.08);
-    this.osc1.frequency.setTargetAtTime(48 + speed01 * 150, t, 0.05);
-    this.osc2.frequency.setTargetAtTime(26 + speed01 * 72, t, 0.05);
-    this.engineLp.frequency.setTargetAtTime(300 + speed01 * 1100, t, 0.1);
+    this.osc1.frequency.setTargetAtTime(34 + speed01 * 62, t, 0.05);
+    this.osc2.frequency.setTargetAtTime(17.9 + speed01 * 32, t, 0.05);
+    this.sub.frequency.setTargetAtTime(17 + speed01 * 31, t, 0.05);
+    this.engineLp.frequency.setTargetAtTime(150 + speed01 * 360, t, 0.1);
+    this.lfo.frequency.setTargetAtTime(6 + speed01 * 10, t, 0.1);
   };
 
   // intensity 0..1
@@ -81,8 +102,8 @@
 
     var thump = this.ctx.createOscillator();
     thump.type = "sine";
-    thump.frequency.setValueAtTime(95, t);
-    thump.frequency.exponentialRampToValueAtTime(38, t + 0.22);
+    thump.frequency.setValueAtTime(80, t);
+    thump.frequency.exponentialRampToValueAtTime(30, t + 0.24);
     var tg = this.ctx.createGain();
     tg.gain.setValueAtTime(vol * 0.9, t);
     tg.gain.exponentialRampToValueAtTime(0.001, t + 0.25);

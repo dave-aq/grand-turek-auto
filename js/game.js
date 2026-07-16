@@ -449,19 +449,42 @@
     ctx.translate(p.x, p.y);
     ctx.rotate(p.vx / 1400);                    // náklon dle řízení
 
-    rr(ctx, -17, -30, 34, 60, 7, "#1d5c33");    // british racing green
+    // Mercedes G: hranatá karoserie, kulatá světla, blinkry na blatnících,
+    // střešní ližiny a rezerva na zadních dveřích
+    rr(ctx, -17, -30, 34, 60, 3, "#26282c");
+    ctx.strokeStyle = "#8f979e"; ctx.lineWidth = 1.5;
+    ctx.strokeRect(-16, -29, 32, 58);
+    // maska + kulaté světlomety
+    ctx.fillStyle = "#b9c0c7";
+    ctx.fillRect(-13, -29, 26, 4);
+    circle(ctx, -10, -25, 3, "#fff3b0");
+    circle(ctx, 10, -25, 3, "#fff3b0");
+    // blinkry na blatnících
+    circle(ctx, -14.5, -28, 2, "#ffb62e");
+    circle(ctx, 14.5, -28, 2, "#ffb62e");
+    // čelní sklo (u G téměř kolmé, úzký pás)
     ctx.fillStyle = "#22262c";
-    ctx.fillRect(-13, -20, 26, 8);
-    ctx.fillRect(-13, 16, 26, 6);
-    rr(ctx, -13, -10, 26, 24, 3, "#174a29");
-    // chromová maska a světla
-    ctx.fillStyle = "#cfd6dd";
-    ctx.fillRect(-13, -30, 26, 4);
-    circle(ctx, -10, -27, 3, "#fff3b0");
-    circle(ctx, 10, -27, 3, "#fff3b0");
-    // pruh po kapotě
-    ctx.fillStyle = "#e9e4d0";
-    ctx.fillRect(-2.5, -30, 5, 60);
+    ctx.fillRect(-13, -17, 26, 6);
+    // střecha s ližinami
+    rr(ctx, -13, -9, 26, 30, 2, "#2e3136");
+    ctx.fillStyle = "#585d64";
+    ctx.fillRect(-12, -9, 2.5, 30);
+    ctx.fillRect(9.5, -9, 2.5, 30);
+    // zadní okno
+    ctx.fillStyle = "#22262c";
+    ctx.fillRect(-13, 23, 26, 5);
+    // zrcátka
+    ctx.fillStyle = "#26282c";
+    ctx.fillRect(-20, -16, 4, 5);
+    ctx.fillRect(16, -16, 4, 5);
+    // rezerva na zadních dveřích
+    circle(ctx, 0, 26, 7, "#131417");
+    ctx.strokeStyle = "#6a6f76"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0, 26, 5.5, 0, Math.PI * 2); ctx.stroke();
+    // brzdová světla
+    ctx.fillStyle = "#a11212";
+    ctx.fillRect(-14, 28, 5, 2.5);
+    ctx.fillRect(9, 28, 5, 2.5);
     ctx.restore();
   };
 

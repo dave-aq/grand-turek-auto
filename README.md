@@ -10,9 +10,10 @@ Hra má dva koncepty, vybírá se v úvodním menu (`index.html`):
 
 - **Koncept A — Carmageddon** (`carmageddon.html`): pohled shora, tři pruhy,
   Turkocam v panelu ve stylu Doom.
-- **Koncept B — STUNTS** (`stunts.html`): first-person kokpit veterána
-  s pseudo-3D silnicí (zatáčky, kopce), volantem, budíky — a grimasami
-  ve **zpětném zrcátku**.
+- **Koncept B — STUNTS** (`stunts.html`): first-person kokpit hranatého
+  teréňáku ve stylu Mercedesu G (palubovka s kulatými výdechy, widescreen
+  budíky, volant s hvězdou) s pseudo-3D silnicí — a grimasami
+  ve **zpětném zrcátku**. Semafor tu má **každý pruh vlastní**.
 
 ## Jak spustit
 
@@ -43,8 +44,10 @@ Hra je statická, takže funguje i na GitHub Pages
 - Nabourané auto = preferenční hlasy (dražší auto = víc hlasů).
 - Řetěz bouraček do 4 sekund = **kombo** (násobič až ×5, od ×3 sluneční brýle).
 - Projetí na červenou = +200 hlasů a spiklenecké mrknutí.
-- Elektromobily jedou potichu a nesou nejvíc hlasů.
-- **Sanitkám se vyhýbej** — −500 hlasů, mediální skandál.
+- Elektromobily jedou potichu a nesou nejvíc hlasů (ve STUNTS módu
+  s bonusem +150 a velkým oznámením).
+- **Sanitkám se vyhýbej** — −500 hlasů, mediální skandál (ve STUNTS módu
+  krvavý titulek přes obrazovku).
 - Hra končí, když je karoserie na šrot.
 
 ## Struktura
