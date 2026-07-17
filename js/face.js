@@ -1,0 +1,506 @@
+/* ============================================================
+ * Turkocam — obličej ve stylu Doom HUD, pixel-art edice.
+ * Stavový automat grimas + pixelový sprite skládaný z mřížky
+ * a výměnných záplat (oči / obočí / ústa) podle výrazu.
+ * Modul je nezávislý na pohledu hry (panel i zpětné zrcátko).
+ * Vlastní PNG v assets/face/<stav>.png mají stále přednost.
+ * ============================================================ */
+(function () {
+  "use strict";
+
+  /* ---------------------- stavový automat ---------------------- */
+
+  var PRIORITY = { ko: 100, pain: 80, panic: 70, most: 55, kill: 50, redlight: 40, rage: 30, disgust: 28, grit: 26, smug: 25 };
+  var EXPR = { ko: "ko", pain: "pain", panic: "panic", most: "most", kill: "grin", redlight: "wink", rage: "rage", disgust: "disgust", grit: "grit", smug: "smug" };
+  var DURATION = { ko: Infinity, pain: 0.7, panic: 1.6, most: 1.3, kill: 0.9, redlight: 0.9, rage: 0.8, disgust: 0.9, grit: 1.0, smug: 1.0 };
+
+  var SPRITE_KEYS = ["neutral", "grin", "wink", "rage", "pain", "panic", "ko", "sunglasses",
+                     "smug", "disgust", "most", "grit"];
+  var SPRITES = { tried: false, imgs: {} };
+
+  function tryLoadSprites() {
+    if (SPRITES.tried || typeof Image === "undefined") return;
+    SPRITES.tried = true;
+    SPRITE_KEYS.forEach(function (k) {
+      var im = new Image();
+      im.onload = function () { SPRITES.imgs[k] = im; };
+      im.src = "assets/face/" + k + ".png";
+    });
+  }
+
+  function FaceCam() {
+    this.reset();
+    tryLoadSprites();
+  }
+
+  FaceCam.prototype.reset = function () {
+    this.expr = "neutral";
+    this.exprUntil = 0;
+    this.exprPrio = 0;
+    this.t = 0;
+    this.blinkAt = 2 + Math.random() * 2;
+    this.blinking = 0;
+    this.healthTier = 0;
+    this.sunglasses = false;
+    this.look = 0;      // -1 vlevo / 0 / 1 vpravo — oči po doomovsku
+  };
+
+  FaceCam.prototype.trigger = function (event) {
+    var prio = PRIORITY[event] || 0;
+    var active = this.t < this.exprUntil;
+    if (!active || prio >= this.exprPrio) {
+      this.expr = EXPR[event] || "neutral";
+      this.exprPrio = prio;
+      this.exprUntil = this.t + (DURATION[event] || 0.8);
+    }
+  };
+
+  FaceCam.prototype.update = function (dt, state) {
+    this.t += dt;
+    this.healthTier = state.health > 66 ? 0 : state.health > 33 ? 1 : 2;
+    this.sunglasses = !!state.sunglasses;
+    this.look = state.look || 0;
+
+    if (this.t >= this.exprUntil && this.expr !== "ko") {
+      this.expr = "neutral";
+      this.exprPrio = 0;
+    }
+    if (this.expr === "neutral") {
+      if (this.blinking > 0) {
+        this.blinking -= dt;
+      } else if (this.t > this.blinkAt) {
+        this.blinking = 0.14;
+        this.blinkAt = this.t + 2 + Math.random() * 2.5;
+      }
+    } else {
+      this.blinking = 0;
+    }
+  };
+
+  /* ------------------------- pixel art ------------------------- */
+
+  var GW = 36, GH = 42;   // mřížka spritu
+
+  // palety: základ, vztek (rudá), potlučený (tier 2)
+  var PALETTES = {
+    base: {
+      H: "#d9a441", h: "#a87b2c", L: "#edc76f",
+      S: "#ecb489", s: "#cf9464", w: "#f6cf9f",
+      E: "#f6f6f6", I: "#5e93b8", p: "#1c2430", B: "#7a5626",
+      k: "#3a2e20", M: "#7c3428", T: "#ffffff",
+      N: "#243250", n: "#172138", C: "#eef0f2", P: "#e07a8a"
+    }
+  };
+  PALETTES.rage = Object.assign({}, PALETTES.base, {
+    S: "#e0573c", s: "#bc3e28", w: "#ef8461"
+  });
+  PALETTES.tier2 = Object.assign({}, PALETTES.base, {
+    S: "#d9a173", s: "#b97f52", w: "#e6b98d"
+  });
+
+  // základ hlavy: vlasy, tvář, uši, nos, krk, sako (bez očí/obočí/úst)
+  var BASE = [
+    "...........LHHHHHHHHh..............",
+    ".........LLHHHHHHHHHHHh............",
+    "........LHHHHhHHHHHHHHHHh..........",
+    ".......LHHHhHHHHHhHHHHHHHHh........",
+    "......LHHHhHHHHhHHHHHhHHHHHHh......",
+    "......HHHhHHHHhHHHHHhHHHHHHHHh.....",
+    ".....hHHhHHHHhHHHHHhHHHHHhHHHHh....",
+    ".....hHHhHHHhHHHHHhHHHHHhHHHHHh....",
+    ".....hHhHHHHhHHHHHHHHHhHHHHHHHh....",
+    ".....HhHHHHHHHHHHHHHHHHHHHHHHHh....",
+    ".....HHHHHHHHHHHHHHHHHHHHHHHHHh....",
+    ".....HHSSSSSSSSSSSSSSSSSSSSSHHh....",
+    ".....HSwSSSSSSSSSSSSSSSSSSSsSHh....",
+    ".....HSwwSSSSSSSSSSSSSSSSSSssHh....",
+    "....hHSwSSSSSSSSSSSSSSSSSSSssHh....",
+    "....hHSSSSSSSSSSSSSSSSSSSSSSsHh....",
+    "...sShSSSSSSSSSSSSSSSSSSSSSSshSs...",
+    "...sShSSSSSSSSSSSSSSSSSSSSSSshSs...",
+    "...sShSSSSSSSSSSSSSSSSSSSSSSshSs...",
+    "....ssSSSSSSSSSSSsSSSSSSSSSSsss....",
+    "....ssSSSSSSSSSSSsSSSSSSSSSSsss....",
+    ".....sSSSSSSSSSSSsSSSSSSSSSSs......",
+    ".....sSSSSSSSSSSSsSSSSSSSSSSs......",
+    ".....sSSsSSSSSSSSssSSSSSsSSSs......",
+    ".....sSSsSSSSSkssskSSSSSsSSSs......",
+    ".....sSSSsSSSSSSSSSSSSSsSSSSs......",
+    ".....sSSSsSSSSSSSSSSSSSsSSSSs......",
+    ".....sSSSSSSSSSSSSSSSSSSSSSSs......",
+    ".....sSSSSSSSSSSSSSSSSSSSSSSs......",
+    ".....sSSSSSSSSSSSSSSSSSSSSSSs......",
+    "......sSSSSSSSSSSSSSSSSSSSSs.......",
+    "......sSSSSSSSSssssSSSSSSSSs.......",
+    ".......sSSSSSSSSSSSSSSSSSSs........",
+    ".......ssSSSSSSSSSSSSSSSSss........",
+    "........sssSSSSSSSSSSSSsss.........",
+    "..........ssSSSSSSSSSSss...........",
+    "..........sSSSSSSSSSSSSs...........",
+    "....NN....sSSSSSSSSSSSSs....NN.....",
+    "..NNNNNN..sSSSSSSSSSSSSs..NNNNNN...",
+    ".NNNNNNNNNnSSSSSSSSSSSSnNNNNNNNN...",
+    "NNNNNNNNNNNnCCSSSSSSCCnNNNNNNNNNN..",
+    "NNNNNNNNNNNNnCCCCCCCCnNNNNNNNNNNNN."
+  ];
+
+  // záplaty výrazů (kreslí se přes základ, '.' = beze změny)
+  var PATCH = {
+    browsFlat:   { x: 10, y: 13, rows: ["BBBBBBB..BBBBBBB"] },
+    browsRaised: { x: 10, y: 12, rows: ["BBBBBBB..BBBBBBB"] },
+    browsRage:   { x: 9,  y: 11, rows: [
+      "Bk..............kB",
+      ".BBk..........kBB.",
+      "...BBk......kBB...",
+      ".....Bk....kB....."
+    ] },
+    browsPain:   { x: 10, y: 12, rows: [
+      "..kBBBB..BBBBk..",
+      "kBB..........BBk"
+    ] },
+    eyesOpen:    { x: 10, y: 15, rows: [
+      ".kkkkk....kkkkk.",
+      "EEIpIEE..EEIpIEE"
+    ] },
+    eyesClosed:  { x: 10, y: 16, rows: ["kkkkkkk..kkkkkkk"] },
+    eyesNarrow:  { x: 10, y: 15, rows: [
+      "kkkkkkk..kkkkkkk",
+      ".EIpIE....EIpIE."
+    ] },
+    eyesWide:    { x: 10, y: 14, rows: [
+      ".kkkkk....kkkkk.",
+      "EEIpIEE..EEIpIEE",
+      "EEEEEEE..EEEEEEE"
+    ] },
+    eyesSqueeze: { x: 10, y: 15, rows: [
+      "kk...kk..kk...kk",
+      "..kkk......kkk.."
+    ] },
+    eyesX:       { x: 10, y: 14, rows: [
+      "k...k......k...k",
+      ".k.k........k.k.",
+      "..k..........k..",
+      ".k.k........k.k.",
+      "k...k......k...k"
+    ] },
+    winkEye:     { x: 10, y: 16, rows: ["kkkkkkk"] },
+    winkOpen:    { x: 19, y: 15, rows: [
+      ".kkkkk.",
+      "EEIpIEE"
+    ] },
+    mouthSmirk:  { x: 13, y: 27, rows: [
+      ".........k",
+      "kkkkkkkkk.",
+      ".sssssss.."
+    ] },
+    mouthGrin:   { x: 11, y: 26, rows: [
+      ".kkkkkkkkkkkk.",
+      "kTTTTTTTTTTTTk",
+      "kTTTTTTTTTTTTk",
+      ".kkkkkkkkkkkk."
+    ] },
+    mouthRage:   { x: 11, y: 25, rows: [
+      ".kkkkkkkkkkkk.",
+      "kTTTTTTTTTTTTk",
+      "kMMMMMMMMMMMMk",
+      "kTTTTTTTTTTTTk",
+      ".kkkkkkkkkkkk."
+    ] },
+    mouthPain:   { x: 12, y: 27, rows: [
+      ".kkkkkkkkk.",
+      "kMMMMMMMMMk",
+      ".kkkkkkkkk."
+    ] },
+    mouthO:      { x: 15, y: 27, rows: [
+      ".kkk.",
+      "kMMMk",
+      ".kkk."
+    ] },
+    tongue:      { x: 17, y: 30, rows: ["PP", "PP"] },
+    // SMUG: levé obočí povytažené, koutek nahoru
+    browsSmug:   { x: 10, y: 11, rows: [
+      "BBBBBBB.........",
+      "................",
+      ".........BBBBBBB"
+    ] },
+    mouthSmug:   { x: 13, y: 26, rows: [
+      "........k",
+      ".......k.",
+      "kkkkkkk..",
+      ".ssssss.."
+    ] },
+    // DISGUST: ohrnutý ret
+    mouthDisgust:{ x: 12, y: 27, rows: [
+      "...kkkk...",
+      "kkk....kkk",
+      ".sssssss.."
+    ] },
+    // MOŠT: spokojené přivřené oči a olíznutí
+    eyesHappy:   { x: 10, y: 15, rows: [
+      ".kkkk.....kkkk..",
+      "k....k...k....k."
+    ] },
+    mouthLick:   { x: 13, y: 27, rows: [
+      "kkkkkkkkk",
+      "....PPPP.",
+      "....PPP.."
+    ] },
+    // GRIT: doomovský zaťatý škleb — koutky vytažené nahoru
+    mouthGrit:   { x: 11, y: 25, rows: [
+      ".kk........kk.",
+      "kTTkkkkkkkkTTk",
+      "kTTTTTTTTTTTTk",
+      "kkkkkkkkkkkkkk",
+      "kTTTTTTTTTTTTk",
+      ".kkkkkkkkkkkk."
+    ] },
+    // pohled do strany (Doom look)
+    eyesLookL:   { x: 10, y: 15, rows: [
+      ".kkkkk....kkkkk.",
+      "IpIEEEE..IpIEEEE"
+    ] },
+    eyesLookR:   { x: 10, y: 15, rows: [
+      ".kkkkk....kkkkk.",
+      "EEEEIpI..EEEEIpI"
+    ] }
+  };
+
+  var EXPR_PARTS = {
+    neutral: ["browsFlat", "eyesOpen", "mouthSmirk"],
+    grin:    ["browsRaised", "eyesOpen", "mouthGrin"],
+    wink:    ["browsFlat", "winkEye", "winkOpen", "mouthSmirk"],
+    rage:    ["browsRage", "eyesNarrow", "mouthRage"],
+    pain:    ["browsPain", "eyesSqueeze", "mouthPain"],
+    panic:   ["browsRaised", "eyesWide", "mouthO"],
+    ko:      ["eyesX", "mouthO", "tongue"],
+    smug:    ["browsSmug", "eyesOpen", "mouthSmug"],
+    disgust: ["browsFlat", "eyesNarrow", "mouthDisgust"],
+    most:    ["browsRaised", "eyesHappy", "mouthLick"],
+    grit:    ["eyesOpen", "browsRage", "mouthGrit"]
+  };
+
+  var cache = {};
+
+  function buildCanvas(expr, blink, variant, look) {
+    var buf = [];
+    for (var r = 0; r < GH; r++) {
+      var row = (BASE[r] || "") + "....................................";
+      buf.push(row.slice(0, GW).split(""));
+    }
+    var parts = (EXPR_PARTS[expr] || EXPR_PARTS.neutral).slice();
+    if (expr === "neutral") {
+      if (blink) parts[parts.indexOf("eyesOpen")] = "eyesClosed";
+      else if (look === -1) parts[parts.indexOf("eyesOpen")] = "eyesLookL";
+      else if (look === 1) parts[parts.indexOf("eyesOpen")] = "eyesLookR";
+    }
+    for (var p = 0; p < parts.length; p++) {
+      var patch = PATCH[parts[p]];
+      if (!patch) continue;
+      for (var pr = 0; pr < patch.rows.length; pr++) {
+        var prow = patch.rows[pr];
+        for (var pc = 0; pc < prow.length; pc++) {
+          var ch = prow[pc];
+          if (ch === ".") continue;
+          var gy = patch.y + pr, gx = patch.x + pc;
+          if (gy >= 0 && gy < GH && gx >= 0 && gx < GW) buf[gy][gx] = ch;
+        }
+      }
+    }
+
+    var canvas = document.createElement("canvas");
+    canvas.width = GW;
+    canvas.height = GH;
+    var c = canvas.getContext("2d");
+    var pal = PALETTES[variant] || PALETTES.base;
+    for (var y = 0; y < GH; y++) {
+      for (var x = 0; x < GW; x++) {
+        var col = pal[buf[y][x]];
+        if (!col) continue;
+        c.fillStyle = col;
+        c.fillRect(x, y, 1, 1);
+      }
+    }
+    return canvas;
+  }
+
+  function getCanvas(expr, blink, variant, look) {
+    var key = expr + "|" + (blink ? 1 : 0) + "|" + variant + "|" + look;
+    if (!cache[key]) cache[key] = buildCanvas(expr, blink, variant, look);
+    return cache[key];
+  }
+
+  /* --------------------------- kreslení --------------------------- */
+
+  FaceCam.prototype.draw = function (ctx, x, y, size, opts) {
+    opts = opts || {};
+    var u = size / 100;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(u, u);
+
+    var e = this.expr;
+    var tier = this.healthTier;
+
+    if (!opts.frameless) {
+      ctx.fillStyle = "#151517";
+      ctx.fillRect(0, 0, 100, 100);
+    }
+
+    // vlastní PNG sprite má přednost
+    var spriteKey = (this.sunglasses && e !== "ko") ? "sunglasses" : e;
+    var ext = SPRITES.imgs[spriteKey] || (spriteKey === "sunglasses" ? SPRITES.imgs[e] : null);
+    var smoothing = ctx.imageSmoothingEnabled;
+    if (ext) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(ext, 0, 0, 100, 100);
+      ctx.imageSmoothingEnabled = smoothing;
+      drawFrame(ctx, opts);
+      ctx.restore();
+      return;
+    }
+
+    // pixelový sprite
+    var variant = e === "rage" ? "rage" : (tier === 2 ? "tier2" : "base");
+    var look = (e === "neutral" && !this.sunglasses) ? this.look : 0;
+    var img = getCanvas(e, this.blinking > 0, variant, look);
+    var cell = 100 / GH;                       // výška mřížky = celý rám
+    var wPx = GW * cell;
+    var ox = (100 - wPx) / 2;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(img, 0, 0, GW, GH, ox, 0, wPx, 100);
+    ctx.imageSmoothingEnabled = smoothing;
+
+    /* -------- animované a stavové vrstvy nad pixel artem -------- */
+
+    // modřiny podle zdraví
+    if (tier >= 1) {
+      ctx.fillStyle = "rgba(110,50,140,0.55)";
+      ellipseRot(ctx, 66, 56, 5.5, 3.5, -0.5);
+      ctx.strokeStyle = "#a1121a"; ctx.lineWidth = 1.4;
+      line(ctx, 31, 33, 38, 36);
+      line(ctx, 33, 37, 39, 38);
+    }
+    if (tier >= 2) {
+      ctx.fillStyle = "rgba(90,40,120,0.55)";
+      ellipseRot(ctx, 35, 60, 5, 3, 0.4);
+      ctx.fillStyle = "rgba(60,20,80,0.4)";
+      ellipseRot(ctx, 36, 48, 7, 3.5, 0);
+      ctx.save();
+      ctx.translate(63, 30); ctx.rotate(0.5);
+      ctx.fillStyle = "#d8c9a3"; ctx.fillRect(-7, -2.6, 14, 5.2);
+      ctx.fillStyle = "#c4b48d"; ctx.fillRect(-5.2, -2.6, 2, 5.2); ctx.fillRect(3.2, -2.6, 2, 5.2);
+      ctx.restore();
+    }
+
+    // aviatorky při kombu — velké kapkovité, přes půl obličeje
+    if (this.sunglasses && e !== "ko") {
+      aviatorLens(ctx, 37, 42, 1);
+      aviatorLens(ctx, 63, 42, -1);
+      ctx.strokeStyle = "#d9b25e"; ctx.lineWidth = 1.8;
+      line(ctx, 48, 33, 52, 33);      // dvojitý můstek
+      line(ctx, 47, 36.5, 53, 36.5);
+      line(ctx, 25, 34, 14, 37);      // nožičky k uším
+      line(ctx, 75, 34, 86, 37);
+    }
+
+    // pot při panice
+    if (e === "panic") {
+      var ph = (this.t * 2.2) % 1;
+      ctx.fillStyle = "#7ec8ff";
+      drop(ctx, 79, 34 + ph * 16, 2.4);
+      drop(ctx, 21, 38 + ((ph + 0.45) % 1) * 14, 2);
+    }
+
+    // hvězdičky při KO
+    if (e === "ko") {
+      ctx.fillStyle = "#ffd23f";
+      for (var k = 0; k < 3; k++) {
+        var ang = this.t * 2.4 + k * (Math.PI * 2 / 3);
+        star(ctx, 50 + Math.cos(ang) * 34, 18 + Math.sin(ang) * 8, 4.5, ang);
+      }
+    }
+
+    drawFrame(ctx, opts);
+    ctx.restore();
+  };
+
+  // jedno kapkovité sklo aviatorek: rovná horní hrana, velká kapka dolů,
+  // gradientní ztmavení, zlatý rám a odlesk; flip zrcadlí pro druhé oko
+  function aviatorLens(ctx, cx, cy, flip) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(flip, 1);
+    ctx.beginPath();
+    ctx.moveTo(-12, -9);
+    ctx.lineTo(12, -9);
+    ctx.quadraticCurveTo(13.5, 4, 7, 10);
+    ctx.quadraticCurveTo(0, 15.5, -6, 12.5);
+    ctx.quadraticCurveTo(-13.5, 8, -12, -9);
+    ctx.closePath();
+    ctx.fillStyle = "#17150f";
+    ctx.fill();
+    // gradientní spodek skla
+    ctx.clip();
+    ctx.fillStyle = "rgba(120,100,70,0.35)";
+    ctx.fillRect(-14, 4, 28, 12);
+    // odlesk
+    ctx.fillStyle = "rgba(255,255,255,0.3)";
+    ctx.beginPath();
+    ctx.moveTo(-8, -9); ctx.lineTo(-2, -9); ctx.lineTo(-7, 9); ctx.lineTo(-11, 5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    // zlatý rám
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(flip, 1);
+    ctx.beginPath();
+    ctx.moveTo(-12, -9);
+    ctx.lineTo(12, -9);
+    ctx.quadraticCurveTo(13.5, 4, 7, 10);
+    ctx.quadraticCurveTo(0, 15.5, -6, 12.5);
+    ctx.quadraticCurveTo(-13.5, 8, -12, -9);
+    ctx.closePath();
+    ctx.strokeStyle = "#d9b25e";
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawFrame(ctx, opts) {
+    if (opts.frameless) return;
+    ctx.strokeStyle = "#000"; ctx.lineWidth = 3; ctx.strokeRect(1.5, 1.5, 97, 97);
+    ctx.strokeStyle = "#4c4c55"; ctx.lineWidth = 1.5; ctx.strokeRect(4, 4, 92, 92);
+  }
+
+  /* ----------------------- pomocné kreslení ----------------------- */
+
+  function ellipseRot(ctx, cx, cy, rx, ry, rot) {
+    ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, rot, 0, Math.PI * 2); ctx.fill();
+  }
+  function line(ctx, x1, y1, x2, y2) {
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  }
+  function drop(ctx, x, y, r) {
+    ctx.beginPath();
+    ctx.moveTo(x, y - r * 1.6);
+    ctx.quadraticCurveTo(x + r, y, x, y + r);
+    ctx.quadraticCurveTo(x - r, y, x, y - r * 1.6);
+    ctx.closePath(); ctx.fill();
+  }
+  function star(ctx, cx, cy, r, rot) {
+    ctx.save();
+    ctx.translate(cx, cy); ctx.rotate(rot);
+    ctx.beginPath();
+    for (var i = 0; i < 10; i++) {
+      var rr = i % 2 ? r * 0.45 : r;
+      var a = (i / 10) * Math.PI * 2;
+      ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  window.GTA = window.GTA || {};
+  window.GTA.FaceCam = FaceCam;
+})();

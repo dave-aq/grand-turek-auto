@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Turkmageddon — Grand Turek Auto</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="game-wrap">
+  <canvas id="game" width="640" height="480"></canvas>
+
+  <div id="touch-ui">
+    <button class="tbtn tbtn-pause" id="t-pause">&#10074;&#10074;</button>
+  </div>
+
+  <div id="overlay-start" class="overlay">
+    <h1>TURKMAGEDDON</h1>
+    <p class="tagline">Pravidla silničního provozu jsou jen doporučení.</p>
+    <div class="controls">
+      <p><b>&larr;/&rarr;</b> nebo <b>A/D</b> — řízení</p>
+      <p><b>&uarr;</b> nebo <b>W</b> — plyn &nbsp;·&nbsp; <b>&darr;</b> nebo <b>S</b> — brzda</p>
+      <p><b>M</b> — zvuk &nbsp;·&nbsp; <b>R</b> — restart &nbsp;·&nbsp; <b>Esc</b> — pauza</p>
+      <p class="touch-note">Na mobilu: <b>drž prst</b> na obrazovce =
+        plný plyn &nbsp;·&nbsp; <b>do stran</b> = řízení
+        &nbsp;·&nbsp; <b>dolů</b> = brzda</p>
+    </div>
+    <p class="rules">Bourej auta, projížděj na červenou, sbírej <b>preferenční hlasy</b>.<br>
+      Od 200 km/h běží <b>PLYNULÁ JÍZDA</b>, na 325 <b>OSTRAVA!!!</b><br>
+      Sanitkám se vyhýbej — média nespí!</p>
+    <button id="btn-start">STARTUJEME (Enter)</button>
+    <p class="disclaimer">Satirická parodie. Všechny postavy jsou karikatury,
+      veškerá podobnost je nadsázka. Bourejte pouze virtuálně.</p>
+    <div class="donate-box hidden" id="donate-box">
+      <code id="donate-addr"></code>
+      <div class="donate-actions">
+        <button id="donate-copy">Zkopírovat</button>
+        <a id="donate-link" href="#">Otevřít v peněžence</a>
+      </div>
+    </div>
+    <button class="donate-mini hidden" id="donate-mini" title="Přispěj na benzín">&#8383;</button>
+  </div>
+
+  <div id="overlay-article" class="overlay hidden">
+    <div class="newspaper">
+      <div class="np-head">DENÍK ŠROT</div>
+      <div class="np-date">blesková zpráva &nbsp;·&nbsp; právě teď</div>
+      <h2>„JEL JSEM NA ZELENOU, NEBYLA TO SANITKA"</h2>
+      <canvas id="np-art" width="300" height="150"></canvas>
+      <p class="np-caption">Nesanitka po kontaktu s hranatou legendou
+        zaparkovala na střeše. Preference rostou.</p>
+      <p class="np-continue" id="np-continue">pokračuj libovolnou klávesou
+        nebo ťuknutím</p>
+    </div>
+  </div>
+
+  <div id="overlay-over" class="overlay hidden">
+    <div class="newspaper">
+      <div class="np-head">DENÍK ŠROT</div>
+      <div class="np-date">mimořádné vydání &nbsp;·&nbsp; 5 Kč</div>
+      <h2 id="np-headline">PILOT T. DOJEZDIL!</h2>
+      <p id="np-stats">…</p>
+      <p id="np-best" class="np-best"></p>
+    </div>
+    <button id="btn-restart">REZIGNACE?<span class="btn-sub">SPIRÁLA REALISMU POKRAČUJE (R)</span></button>
+    <button class="donate-toggle hidden" id="donate-toggle-over">&#8383; Přispěj na benzín</button>
+    <div class="donate-box hidden" id="donate-box-over">
+      <code id="donate-addr-over"></code>
+      <div class="donate-actions">
+        <button id="donate-copy-over">Zkopírovat</button>
+        <a id="donate-link-over" href="#">Otevřít v peněžence</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/face.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/turkmageddon.js"></script>
+</body>
+</html>

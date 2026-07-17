@@ -1,0 +1,284 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background: #101014;
+  color: #eee;
+  font-family: "Arial Narrow", Arial, sans-serif;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.touch {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+#game-wrap {
+  position: relative;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+#game {
+  display: block;
+  background: #202028;
+  image-rendering: pixelated;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  background: rgba(12, 12, 18, 0.88);
+  padding: 24px;
+}
+
+.overlay.hidden { display: none; }
+
+.overlay h1 {
+  font-size: clamp(26px, 10.5vw, 56px);
+  line-height: 0.95;
+  letter-spacing: 2px;
+  color: #ffd23f;
+  text-shadow: 4px 4px 0 #a1121a, 7px 7px 0 #000;
+  max-width: 100vw;
+}
+
+.tagline { font-style: italic; color: #bbb; }
+
+.controls p, .rules { font-size: 15px; line-height: 1.5; color: #ddd; }
+
+.rules { color: #ffb84d; }
+
+button {
+  font: bold 20px "Arial Narrow", Arial, sans-serif;
+  letter-spacing: 1px;
+  padding: 12px 28px;
+  border: 3px solid #000;
+  border-radius: 6px;
+  background: #ffd23f;
+  color: #1a1a1a;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 #000;
+}
+button:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 #000; }
+button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+
+.btn-sub {
+  display: block;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  margin-top: 3px;
+}
+
+/* Dotykové ovládání — zobrazí se jen na dotykových zařízeních */
+#touch-ui { display: none; }
+body.touch #touch-ui { display: block; }
+
+.touch-note { display: none; font-size: 14px; color: #ddd; }
+body.touch .touch-note { display: block; }
+
+.tbtn {
+  position: absolute;
+  z-index: 6;
+  border-radius: 14px;
+  border: 2px solid #000;
+  background: rgba(18, 18, 24, 0.55);
+  color: #ffd23f;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6);
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+.tbtn:hover { transform: none; box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6); }
+.tbtn:active {
+  background: rgba(255, 210, 63, 0.3);
+  transform: none;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6);
+}
+.tbtn-pause {
+  top: 10px;
+  right: 10px;
+  width: 46px;
+  height: 46px;
+  font: bold 15px Arial, sans-serif;
+}
+
+.disclaimer {
+  font-size: 11px;
+  color: #888;
+  max-width: 340px;
+  line-height: 1.4;
+}
+
+/* Decentní příspěvek na benzín */
+.donate-toggle {
+  font: bold 12px "Arial Narrow", Arial, sans-serif;
+  letter-spacing: 1px;
+  padding: 5px 12px;
+  border: 1px solid #6a5a2a;
+  border-radius: 12px;
+  background: transparent;
+  color: #b9a25e;
+  box-shadow: none;
+}
+.donate-toggle:hover {
+  transform: none;
+  box-shadow: none;
+  color: #ffd23f;
+  border-color: #ffd23f;
+}
+.donate-toggle.hidden, .donate-box.hidden, .donate-mini.hidden { display: none; }
+.tbtn.hidden { display: none; }
+
+/* mrňavé ₿ v rožku úvodní obrazovky */
+.donate-mini {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  font: bold 12px Arial, sans-serif;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #4a4020;
+  border-radius: 50%;
+  background: transparent;
+  color: #8a7a45;
+  opacity: 0.6;
+  box-shadow: none;
+}
+.donate-mini:hover {
+  transform: none;
+  box-shadow: none;
+  opacity: 1;
+  color: #ffd23f;
+  border-color: #ffd23f;
+}
+
+.donate-box {
+  background: #1b1b22;
+  border: 1px solid #6a5a2a;
+  border-radius: 8px;
+  padding: 10px 14px;
+  max-width: 92%;
+}
+.donate-box code {
+  display: block;
+  font: 12px monospace;
+  color: #e8e8e8;
+  word-break: break-all;
+  margin-bottom: 8px;
+}
+.donate-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+}
+.donate-actions button {
+  font: bold 12px "Arial Narrow", Arial, sans-serif;
+  padding: 4px 10px;
+  border: 1px solid #6a5a2a;
+  border-radius: 10px;
+  background: transparent;
+  color: #b9a25e;
+  box-shadow: none;
+}
+.donate-actions button:hover { transform: none; box-shadow: none; color: #ffd23f; }
+.donate-actions a {
+  font: 12px "Arial Narrow", Arial, sans-serif;
+  color: #b9a25e;
+}
+
+/* Game-over newspaper */
+.newspaper {
+  background: #f4ecd8;
+  color: #17130c;
+  width: 360px;
+  padding: 16px 18px 20px;
+  border: 2px solid #17130c;
+  box-shadow: 6px 6px 0 #000;
+  transform: rotate(-1.5deg);
+}
+
+.np-head {
+  font-size: 40px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  border-bottom: 3px double #17130c;
+  padding-bottom: 4px;
+}
+
+.np-date {
+  font-size: 11px;
+  border-bottom: 1px solid #17130c;
+  padding: 3px 0 5px;
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+
+.newspaper h2 {
+  font-size: 27px;
+  line-height: 1.05;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+#np-stats { font-size: 15px; line-height: 1.55; }
+
+.np-best { margin-top: 8px; font-weight: bold; font-size: 14px; }
+
+#overlay-article { background: rgba(12, 12, 18, 0.6); }
+#overlay-article .newspaper { transform: rotate(1.2deg); }
+
+#np-art {
+  display: block;
+  width: 100%;
+  border: 2px solid #17130c;
+  margin: 4px 0 8px;
+  background: #cfd8de;
+  image-rendering: pixelated;
+}
+
+.np-caption {
+  font-size: 12px;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.np-continue {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.np-continue.show {
+  opacity: 1;
+  animation: npBlink 1.1s infinite;
+}
+@keyframes npBlink {
+  0%, 60% { opacity: 1; }
+  61%, 100% { opacity: 0.25; }
+}
