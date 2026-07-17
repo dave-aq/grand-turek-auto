@@ -47,6 +47,7 @@ Vpravo nahoře je **❚❚** pauza.
   propukne **OSTRAVA!!!** („žádné brzdy nejsou dost dobré")
   s trojnásobným přílivem. Zatáčení rychlost žere, takže to udržíš jen rovně.
 - Elektromobily jedou potichu, nesou nejvíc hlasů a bonus +150.
+- Občas potkáš **pohřebák** — „to je znamení".
 - Náraz do **sanitky** = krvavý titulek SKANDÁL přes obrazovku… a +500
   hlasů. Turek prostě nemůže prohrát. (Karoserie to ovšem schytá nejvíc
   a kombo spadne.)

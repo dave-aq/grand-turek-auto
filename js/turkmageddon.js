@@ -28,11 +28,12 @@
 
   // typy aut: šance, hlasy, barvy, světová šířka
   var CAR_TYPES = [
-    { p: 0.34, votes: 60,  color: "#c8cdd4", roof: "#9aa1ab", ww: 620 },
+    { p: 0.28, votes: 60,  color: "#c8cdd4", roof: "#9aa1ab", ww: 620 },
     { p: 0.22, votes: 80,  color: "#7d4e2d", roof: "#5d3820", ww: 660 },
     { p: 0.18, votes: 100, color: "#4a6b8a", roof: "#3a5570", ww: 780, tough: 1.5 },
     { p: 0.16, votes: 120, color: "#3fc1a9", roof: "#2e9a86", ww: 650, ev: true },
-    { p: 0.10, votes: 0,   color: "#f2f2f2", roof: "#e0e0e0", ww: 780, ambulance: true }
+    { p: 0.10, votes: 0,   color: "#f2f2f2", roof: "#e0e0e0", ww: 780, ambulance: true },
+    { p: 0.06, votes: 90,  color: "#141518", roof: "#0c0d10", ww: 700, hearse: true }
   ];
 
   function pickType() {
@@ -208,6 +209,7 @@
     car.wreckT = 0;
     car.nearMissed = false;
     car.evSeen = false;
+    car.hearseSeen = false;
     car.prevRel = 1e9;
   }
 
@@ -316,6 +318,15 @@
           rel > PLAYER_Z && rel < PLAYER_Z + 15 * SEG_L) {
         c.evSeen = true;
         face.trigger("disgust");
+      }
+
+      // míjení pohřebáku — „to je znamení"
+      if (!c.wrecked && c.type.hearse && !c.hearseSeen &&
+          c.prevRel > PLAYER_Z && rel <= PLAYER_Z &&
+          Math.abs(c.prevRel - rel) < 6000) {
+        c.hearseSeen = true;
+        face.trigger("smug");
+        addFloat(centerXOf(c), H * 0.42, "Pohřebák, to je znamení!", "#dfe3e8", 24, 2.2);
       }
 
       // téměř-minutí
@@ -546,8 +557,9 @@
     }
   }
 
-  function addFloat(x, y, text, color) {
-    floats.push({ x: x, y: y, text: text, color: color, life: 1.4 });
+  function addFloat(x, y, text, color, size, life) {
+    floats.push({ x: x, y: y, text: text, color: color,
+                  size: size || 15, life: life || 1.4 });
   }
 
   function addBanner(text, color, size, life, y, blood) {
@@ -706,10 +718,10 @@
     }
     ctx.globalAlpha = 1;
 
-    ctx.font = "bold 16px Arial";
     ctx.textAlign = "center";
     for (var f = 0; f < floats.length; f++) {
       var fl = floats[f];
+      ctx.font = "bold " + (fl.size || 15) + "px Arial";
       ctx.globalAlpha = Math.min(1, fl.life);
       ctx.fillStyle = "#000";
       ctx.fillText(fl.text, fl.x + 1.5, fl.y + 1.5);
@@ -1137,6 +1149,20 @@
       ctx.font = "bold 24px Arial";
       ctx.textAlign = "center";
       ctx.fillText("⚡", 0, -60);
+    }
+    if (t.hearse && !car.wrecked) {
+      // vysoká prosklená záď se závěsy a věnečkem
+      rr(-30, -80, 60, 46, 5, "#454e58");
+      ctx.fillStyle = "#e8e8e0";
+      ctx.fillRect(-30, -80, 6, 46);
+      ctx.fillRect(24, -80, 6, 46);
+      ctx.strokeStyle = "#4a7a3a";
+      ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.arc(0, -56, 12, 0, Math.PI * 2); ctx.stroke();
+      circle(0, -68, 3.2, "#c0392b");
+      // chromová lišta
+      ctx.fillStyle = "#cfd6dd";
+      ctx.fillRect(-44, -34, 88, 3);
     }
     if (car.wrecked) {
       ctx.strokeStyle = "#33363b"; ctx.lineWidth = 3;
