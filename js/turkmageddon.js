@@ -326,7 +326,7 @@
           Math.abs(c.prevRel - rel) < 6000) {
         c.hearseSeen = true;
         face.trigger("smug");
-        addFloat(centerXOf(c), H * 0.42, "Pohřebák, to je znamení!", "#dfe3e8", 24, 2.2);
+        addFloat(W / 2, 318, "Pohřebák, to je znamení!", "#dfe3e8", 19, 2.2, 8);
       }
 
       // téměř-minutí
@@ -421,7 +421,8 @@
     }
     for (var f = floats.length - 1; f >= 0; f--) {
       var fl = floats[f];
-      fl.y -= 26 * dt; fl.life -= dt;
+      fl.y -= (fl.rise === undefined ? 26 : fl.rise) * dt;
+      fl.life -= dt;
       if (fl.life <= 0) floats.splice(f, 1);
     }
     updateBanners(dt);
@@ -557,9 +558,10 @@
     }
   }
 
-  function addFloat(x, y, text, color, size, life) {
+  function addFloat(x, y, text, color, size, life, rise) {
     floats.push({ x: x, y: y, text: text, color: color,
-                  size: size || 15, life: life || 1.4 });
+                  size: size || 15, life: life || 1.4,
+                  rise: rise === undefined ? 26 : rise });
   }
 
   function addBanner(text, color, size, life, y, blood) {
@@ -1865,6 +1867,7 @@
   // debug hook pro testy a ladění efektů z konzole
   window.__gtaDebug = {
     addBanner: addBanner,
+    addFloat: addFloat,
     face: face,
     boost: function (v) { speed = Math.min(MAXS, Math.max(0, v)); },
     damage: function (n) { health = Math.max(1, health - n); },
