@@ -28,12 +28,12 @@
 
   // typy aut: šance, hlasy, barvy, světová šířka
   var CAR_TYPES = [
-    { p: 0.28, votes: 60,  color: "#c8cdd4", roof: "#9aa1ab", ww: 620 },
+    { p: 0.31, votes: 60,  color: "#c8cdd4", roof: "#9aa1ab", ww: 620 },
     { p: 0.22, votes: 80,  color: "#7d4e2d", roof: "#5d3820", ww: 660 },
     { p: 0.18, votes: 100, color: "#4a6b8a", roof: "#3a5570", ww: 780, tough: 1.5 },
     { p: 0.16, votes: 120, color: "#3fc1a9", roof: "#2e9a86", ww: 650, ev: true },
     { p: 0.10, votes: 0,   color: "#f2f2f2", roof: "#e0e0e0", ww: 780, ambulance: true },
-    { p: 0.06, votes: 90,  color: "#141518", roof: "#0c0d10", ww: 700, hearse: true }
+    { p: 0.03, votes: 90,  color: "#141518", roof: "#0c0d10", ww: 700, hearse: true }
   ];
 
   function pickType() {
@@ -173,6 +173,7 @@
   var crossers;   // nesanitky přejíždějící křižovatku zleva doprava
   var articleReadyAt = 0;
   var waveT = 0;  // královské mávání při průjezdu křižovatkou
+  var lastHearseAt = -999;
 
   best = parseInt(localStorage.getItem("gta_best_stunts") || "0", 10);
 
@@ -186,6 +187,7 @@
     for (var z = 0; z < mostarnas.length; z++) mostarnas[z].used = false;
     crossers = [];
     waveT = 0;
+    lastHearseAt = -999;
     for (var gi = 0; gi < gantries.length; gi++) gantries[gi].crosserDone = false;
     over = false;
     face.reset();
@@ -200,6 +202,21 @@
 
   function respawn(car) {
     car.type = pickType();
+    // pohřebák: nejvýš jeden na trati a s odstupem aspoň 20 s
+    if (car.type.hearse) {
+      var otherHearse = false;
+      for (var hh = 0; hh < cars.length; hh++) {
+        if (cars[hh] !== car && cars[hh].type && cars[hh].type.hearse) {
+          otherHearse = true;
+          break;
+        }
+      }
+      if (otherHearse || timeT - lastHearseAt < 20) {
+        car.type = CAR_TYPES[0];
+      } else {
+        lastHearseAt = timeT;
+      }
+    }
     var lane = [-0.66, 0, 0.66][Math.floor(Math.random() * 3)];
     car.offset = lane + (Math.random() - 0.5) * 0.12;
     car.z = (position + (DRAW_DIST + 15 + Math.random() * 90) * SEG_L) % trackLen;
