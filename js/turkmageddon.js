@@ -61,9 +61,16 @@
     var plan = [], total = 0;
     plan.push({ len: 90, target: 0 });
     total += 90;
+    // směry zatáček se střídají — náhodný generátor uměl vyrobit trať
+    // skoro jen s levotočivými
+    var dir = Math.random() < 0.5 ? 1 : -1;
     while (total < 1450) {
       var len = 60 + Math.floor(Math.random() * 80);
-      var target = Math.random() < 0.3 ? 0 : (Math.random() * 8 - 4);
+      var target = 0;
+      if (Math.random() >= 0.3) {
+        target = dir * (1.5 + Math.random() * 2.5);
+        dir = -dir;
+      }
       plan.push({ len: len, target: target });
       total += len;
     }
@@ -174,6 +181,7 @@
   var articleReadyAt = 0;
   var waveT = 0;  // královské mávání při průjezdu křižovatkou
   var lastHearseAt = -999;
+  var mostCount = 0;   // kolikrát hráč „moštoval"
 
   best = parseInt(localStorage.getItem("gta_best_stunts") || "0", 10);
 
@@ -188,6 +196,7 @@
     crossers = [];
     waveT = 0;
     lastHearseAt = -999;
+    mostCount = 0;
     for (var gi = 0; gi < gantries.length; gi++) gantries[gi].crosserDone = false;
     over = false;
     face.reset();
@@ -340,10 +349,9 @@
         face.trigger("disgust");
       }
 
-      // míjení pohřebáku — „to je znamení"
+      // pohřebák na dohled — „to je znamení" už při přibližování
       if (!c.wrecked && c.type.hearse && !c.hearseSeen &&
-          c.prevRel > PLAYER_Z && rel <= PLAYER_Z &&
-          Math.abs(c.prevRel - rel) < 6000) {
+          rel > PLAYER_Z && rel < PLAYER_Z + 28 * SEG_L) {
         c.hearseSeen = true;
         face.trigger("smug");
         addFloat(W / 2, 318, "Pohřebák, to je znamení!", "#dfe3e8", 19, 2.2, 8);
@@ -419,9 +427,10 @@
       var zone = mostarnas[mz];
       var relZ = (zone.midZ - position + trackLen) % trackLen;
       if (zone.used && relZ > 60 * SEG_L && relZ < trackLen / 2) zone.used = false;
-      if (!zone.used && health < MAX_HP && playerX > 0.8 && speed < 100 &&
+      if (!zone.used && health < MAX_HP && playerX > 0.8 &&
           playerSeg >= zone.start && playerSeg <= zone.end) {
         zone.used = true;
+        mostCount++;
         var heal = Math.min(80, MAX_HP - health);
         health += heal;
         lastTier = hpTier();
@@ -456,7 +465,11 @@
       sunglasses: comboTimer > 0 && combo >= 3,
       look: Math.abs(steer) > 0.7 ? (steer > 0 ? 1 : -1) : 0
     });
-    audio.setEngine(speedPct, true);
+    // po game overu / nárazu do nesanitky nesmí setEngine přepsat
+    // chcípání motoru naplánované ve stall()
+    if (!over && state === "playing") {
+      audio.setEngine(speedPct, true);
+    }
   }
 
   function centerXOf(car) {
@@ -547,6 +560,7 @@
     }
 
     state = "article";
+    setPauseVisible(false);
     audio.stall();                               // motor chcípne
     articleReadyAt = performance.now() + 1200;   // zámek proti náhodnému stisku
     elArticle.classList.remove("hidden");
@@ -564,6 +578,7 @@
       showGameOver();
     } else {
       state = "playing";
+      setPauseVisible(true);
     }
   }
 
@@ -1848,6 +1863,12 @@
 
   document.getElementById("t-pause").addEventListener("click", togglePause);
 
+  // tlačítko pauzy jen když má co dělat (jízda / pauza)
+  function setPauseVisible(v) {
+    document.getElementById("t-pause").classList.toggle("hidden", !v);
+  }
+  setPauseVisible(false);
+
   // Příspěvek na benzín — sem vlož BTC adresu; dokud je prázdná,
   // tlačítka se vůbec nezobrazí (mini ₿ na startu, plné na game overu)
   var BTC_ADDRESS = "";
@@ -1894,6 +1915,7 @@
     clearInput();
     elStart.classList.add("hidden");
     state = "playing";
+    setPauseVisible(true);
   }
 
   function restart() {
@@ -1903,15 +1925,23 @@
     elOver.classList.add("hidden");
     elArticle.classList.add("hidden");
     state = "playing";
+    setPauseVisible(true);
+  }
+
+  function fmtTime(t) {
+    var m = Math.floor(t / 60), s = Math.floor(t % 60);
+    return m + ":" + (s < 10 ? "0" : "") + s;
   }
 
   function showGameOver() {
     state = "over";
+    setPauseVisible(false);
     elHeadline.textContent = HEADLINES[Math.floor(Math.random() * HEADLINES.length)];
     elStats.innerHTML =
       "Získáno <b>" + fmt(score) + "</b> preferenčních hlasů.<br>" +
       "Sestřeleno <b>" + wrecksN + "</b> aut na <b>" +
-      (distanceM / 1000).toFixed(1) + " km</b>.";
+      (distanceM / 1000).toFixed(1) + " km</b> za <b>" + fmtTime(timeT) + "</b>.<br>" +
+      "Moštováno <b>" + mostCount + "×</b>.";
     elBest.textContent = score >= best && score > 0
       ? "NOVÝ REKORD!"
       : "Rekord: " + fmt(best) + " hlasů";

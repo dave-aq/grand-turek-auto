@@ -147,6 +147,7 @@ body.touch .touch-note { display: block; }
   border-color: #ffd23f;
 }
 .donate-toggle.hidden, .donate-box.hidden, .donate-mini.hidden { display: none; }
+.tbtn.hidden { display: none; }
 
 /* mrňavé ₿ v rožku úvodní obrazovky */
 .donate-mini {

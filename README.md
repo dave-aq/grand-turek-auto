@@ -58,8 +58,8 @@ výrazným stažením **dolů** brzdíš. Vpravo nahoře je **❚❚** pauza.
 - Skoro zničené auto hlásí **DOJEZDOVOU TÍSEŇ**; hra končí, když je
   karoserie na šrot.
 - Opravit karoserii jde v **MOŠTÁRNĚ** („rozhodně ne garáž") u silnice:
-  zpomal pod 100 km/h a zajeď doprava na vjezd — +50 karoserie
-  a razítko dodatečně.
+  stačí projet vjezdem u pravé krajnice — +80 karoserie a razítko
+  dodatečně. Rychlost je irelevantní.
 
 ## Vlastní obličej (AI pixel art)
 
