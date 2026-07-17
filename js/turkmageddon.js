@@ -171,6 +171,7 @@
   var flowActive, flowOstrava, flowTotal, flowCarry;
   var crossers;   // nesanitky přejíždějící křižovatku zleva doprava
   var articleReadyAt = 0;
+  var waveT = 0;  // královské mávání při průjezdu křižovatkou
 
   best = parseInt(localStorage.getItem("gta_best_stunts") || "0", 10);
 
@@ -183,6 +184,7 @@
     flowActive = false; flowOstrava = false; flowTotal = 0; flowCarry = 0;
     for (var z = 0; z < mostarnas.length; z++) mostarnas[z].used = false;
     crossers = [];
+    waveT = 0;
     for (var gi = 0; gi < gantries.length; gi++) gantries[gi].crosserDone = false;
     over = false;
     face.reset();
@@ -205,6 +207,7 @@
     car.vx = 0;
     car.wreckT = 0;
     car.nearMissed = false;
+    car.evSeen = false;
     car.prevRel = 1e9;
   }
 
@@ -246,6 +249,7 @@
         addFloat(W / 2, H * 0.35, "Plynulá jízda! +" + flowTotal + " hlasů", "#ffd23f");
       }
     }
+    if (flowActive) face.trigger("smug");   // spokojený ksicht při plynulé jízdě
 
     var speedPct = speed / MAXS;
     prevPos = position;
@@ -307,6 +311,13 @@
         hitCar(c);
       }
 
+      // elektromobil na dohled → ohrnutý ret
+      if (!c.wrecked && c.type.ev && !c.evSeen &&
+          rel > PLAYER_Z && rel < PLAYER_Z + 15 * SEG_L) {
+        c.evSeen = true;
+        face.trigger("disgust");
+      }
+
       // téměř-minutí
       if (!c.wrecked && !c.nearMissed && c.prevRel > PLAYER_Z && rel <= PLAYER_Z &&
           Math.abs(c.prevRel - rel) < 6000 && speed > 90) {
@@ -314,6 +325,7 @@
         if (gap >= 0.34 && gap < 0.55) {
           c.nearMissed = true;
           score += 25;
+          face.trigger("smug");
           addFloat(centerXOf(c), H * 0.5, "Těsně! +25", "#ffd23f");
         }
       }
@@ -341,6 +353,11 @@
 
       var relBefore = (ga.z - (prevPos + PLAYER_Z) + trackLen) % trackLen;
       if (relBefore < travel) {
+        // průjezd křižovatkou: královské zamávání davům
+        if (speed > 25) {
+          waveT = 1.6;
+          face.trigger("smug");
+        }
         // rozhoduje semafor pruhu, kterým hráč zrovna projíždí
         var lane = playerX < -0.33 ? 0 : playerX > 0.33 ? 2 : 1;
         if (lightState(timeT + ga.offs[lane]) === "red" && speed > 25) {
@@ -378,7 +395,7 @@
         health += heal;
         lastTier = hpTier();
         cracks = [];                       // čelní sklo jako nové
-        face.trigger("kill");
+        face.trigger("most");              // spokojené olíznutí
         audio.ding();
         addBanner("PRAVIDLA MOŠTÁRNY!", "#7dff6e", 36, 2.4, 148, false);
         addFloat(W / 2, H * 0.5, "+" + heal + " karoserie · razítko dodatečně", "#7dff6e");
@@ -400,8 +417,13 @@
 
     shake = Math.max(0, shake - dt);
     mtOff -= base.curve * speedPct * dt * 1.4;
+    waveT = Math.max(0, waveT - dt);
 
-    face.update(dt, { health: (health / MAX_HP) * 100, sunglasses: comboTimer > 0 && combo >= 3 });
+    face.update(dt, {
+      health: (health / MAX_HP) * 100,
+      sunglasses: comboTimer > 0 && combo >= 3,
+      look: Math.abs(steer) > 0.7 ? (steer > 0 ? 1 : -1) : 0
+    });
     audio.setEngine(speedPct, true);
   }
 
@@ -1379,8 +1401,38 @@
 
     // ruce: sako, manžeta, dlaň — „za deset dvě"
     drawHand(Math.PI * 1.28, R);
-    drawHand(Math.PI * 1.72, R);
+    if (waveT <= 0) drawHand(Math.PI * 1.72, R);
 
+    ctx.restore();
+
+    if (waveT > 0) drawWaveHand();
+  }
+
+  // královské mávání davům při průjezdu křižovatkou: pravačka pustí
+  // volant, zvedne se s pokrčeným loktem a dlaň kýve ze strany na stranu
+  function drawWaveHand() {
+    var p = 1 - waveT / 1.6;
+    var lift = Math.sin(Math.min(1, Math.min(p * 4, (1 - p) * 4)) * Math.PI / 2);
+    var bx = 508, by = 480 - lift * 158;
+    var rot = Math.sin(timeT * 9) * 0.4 * lift;
+
+    ctx.save();
+    ctx.translate(bx, by);
+    ctx.rotate(rot);
+    // rukáv saka s manžetou (pokrčený loket)
+    rr(-15, 24, 30, 70, 9, "#1c2a4a");
+    rr(-15, 16, 30, 10, 4, "#e9e9e9");
+    // dlaň
+    ctx.fillStyle = "#e8b98a";
+    ctx.beginPath(); ctx.ellipse(0, 0, 14, 18, 0, 0, Math.PI * 2); ctx.fill();
+    // prsty
+    for (var f = 0; f < 4; f++) {
+      ctx.beginPath();
+      ctx.ellipse(-9 + f * 6, -17, 3.2, 7.5, (f - 1.5) * 0.12, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // palec
+    ctx.beginPath(); ctx.ellipse(-14, -3, 4, 7.5, -0.7, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
 

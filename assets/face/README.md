@@ -52,7 +52,10 @@ obrázkem je tmavý rám panelu/zrcátka.
 | `pain.png` | hurt grimace — eyes squeezed shut, eyebrows tilted up in pain, mouth twisted open, purple bruise on one cheek, small bandage on the forehead |
 | `panic.png` | panicked — eyes wide open with tiny pupils, eyebrows raised high, small trembling open mouth, sweat drops on the temples |
 | `ko.png` | knocked out — X-shaped closed eyes, dazed, tongue sticking slightly out of a small open mouth, three little yellow stars circling above the head |
-| `sunglasses.png` | cool and smug — wearing gold-framed aviator sunglasses with dark lenses, confident smirk |
+| `sunglasses.png` | cool and smug — wearing large gold-framed teardrop aviator sunglasses with dark lenses, confident smirk |
+| `smug.png` | smug and superior — one eyebrow raised high, self-satisfied lopsided smirk |
+| `disgust.png` | disgusted — narrowed eyes, curled upper lip, sneering at something distasteful |
+| `most.png` | delighted — eyes closed content, licking lips after a drink of fresh cider |
 
 Zrcátko ve hře obraz stranově převrací (mrknutí „přeskočí" na druhé
 oko — to je správně, je to odraz). Všechny varianty musí být ze stejného

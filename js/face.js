@@ -10,11 +10,12 @@
 
   /* ---------------------- stavový automat ---------------------- */
 
-  var PRIORITY = { ko: 100, pain: 80, panic: 70, kill: 50, redlight: 40, rage: 30 };
-  var EXPR = { ko: "ko", pain: "pain", panic: "panic", kill: "grin", redlight: "wink", rage: "rage" };
-  var DURATION = { ko: Infinity, pain: 0.7, panic: 1.6, kill: 0.9, redlight: 0.9, rage: 0.8 };
+  var PRIORITY = { ko: 100, pain: 80, panic: 70, most: 55, kill: 50, redlight: 40, rage: 30, disgust: 28, smug: 25 };
+  var EXPR = { ko: "ko", pain: "pain", panic: "panic", most: "most", kill: "grin", redlight: "wink", rage: "rage", disgust: "disgust", smug: "smug" };
+  var DURATION = { ko: Infinity, pain: 0.7, panic: 1.6, most: 1.3, kill: 0.9, redlight: 0.9, rage: 0.8, disgust: 0.9, smug: 1.0 };
 
-  var SPRITE_KEYS = ["neutral", "grin", "wink", "rage", "pain", "panic", "ko", "sunglasses"];
+  var SPRITE_KEYS = ["neutral", "grin", "wink", "rage", "pain", "panic", "ko", "sunglasses",
+                     "smug", "disgust", "most"];
   var SPRITES = { tried: false, imgs: {} };
 
   function tryLoadSprites() {
@@ -41,6 +42,7 @@
     this.blinking = 0;
     this.healthTier = 0;
     this.sunglasses = false;
+    this.look = 0;      // -1 vlevo / 0 / 1 vpravo — oči po doomovsku
   };
 
   FaceCam.prototype.trigger = function (event) {
@@ -57,6 +59,7 @@
     this.t += dt;
     this.healthTier = state.health > 66 ? 0 : state.health > 33 ? 1 : 2;
     this.sunglasses = !!state.sunglasses;
+    this.look = state.look || 0;
 
     if (this.t >= this.exprUntil && this.expr !== "ko") {
       this.expr = "neutral";
@@ -213,7 +216,44 @@
       "kMMMk",
       ".kkk."
     ] },
-    tongue:      { x: 17, y: 30, rows: ["PP", "PP"] }
+    tongue:      { x: 17, y: 30, rows: ["PP", "PP"] },
+    // SMUG: levé obočí povytažené, koutek nahoru
+    browsSmug:   { x: 10, y: 11, rows: [
+      "BBBBBBB.........",
+      "................",
+      ".........BBBBBBB"
+    ] },
+    mouthSmug:   { x: 13, y: 26, rows: [
+      "........k",
+      ".......k.",
+      "kkkkkkk..",
+      ".ssssss.."
+    ] },
+    // DISGUST: ohrnutý ret
+    mouthDisgust:{ x: 12, y: 27, rows: [
+      "...kkkk...",
+      "kkk....kkk",
+      ".sssssss.."
+    ] },
+    // MOŠT: spokojené přivřené oči a olíznutí
+    eyesHappy:   { x: 10, y: 15, rows: [
+      ".kkkk.....kkkk..",
+      "k....k...k....k."
+    ] },
+    mouthLick:   { x: 13, y: 27, rows: [
+      "kkkkkkkkk",
+      "....PPPP.",
+      "....PPP.."
+    ] },
+    // pohled do strany (Doom look)
+    eyesLookL:   { x: 10, y: 15, rows: [
+      ".kkkkk....kkkkk.",
+      "IpIEEEE..IpIEEEE"
+    ] },
+    eyesLookR:   { x: 10, y: 15, rows: [
+      ".kkkkk....kkkkk.",
+      "EEEEIpI..EEEEIpI"
+    ] }
   };
 
   var EXPR_PARTS = {
@@ -223,20 +263,25 @@
     rage:    ["browsRage", "eyesNarrow", "mouthRage"],
     pain:    ["browsPain", "eyesSqueeze", "mouthPain"],
     panic:   ["browsRaised", "eyesWide", "mouthO"],
-    ko:      ["eyesX", "mouthO", "tongue"]
+    ko:      ["eyesX", "mouthO", "tongue"],
+    smug:    ["browsSmug", "eyesOpen", "mouthSmug"],
+    disgust: ["browsFlat", "eyesNarrow", "mouthDisgust"],
+    most:    ["browsRaised", "eyesHappy", "mouthLick"]
   };
 
   var cache = {};
 
-  function buildCanvas(expr, blink, variant) {
+  function buildCanvas(expr, blink, variant, look) {
     var buf = [];
     for (var r = 0; r < GH; r++) {
       var row = (BASE[r] || "") + "....................................";
       buf.push(row.slice(0, GW).split(""));
     }
     var parts = (EXPR_PARTS[expr] || EXPR_PARTS.neutral).slice();
-    if (blink && expr === "neutral") {
-      parts[parts.indexOf("eyesOpen")] = "eyesClosed";
+    if (expr === "neutral") {
+      if (blink) parts[parts.indexOf("eyesOpen")] = "eyesClosed";
+      else if (look === -1) parts[parts.indexOf("eyesOpen")] = "eyesLookL";
+      else if (look === 1) parts[parts.indexOf("eyesOpen")] = "eyesLookR";
     }
     for (var p = 0; p < parts.length; p++) {
       var patch = PATCH[parts[p]];
@@ -268,9 +313,9 @@
     return canvas;
   }
 
-  function getCanvas(expr, blink, variant) {
-    var key = expr + "|" + (blink ? 1 : 0) + "|" + variant;
-    if (!cache[key]) cache[key] = buildCanvas(expr, blink, variant);
+  function getCanvas(expr, blink, variant, look) {
+    var key = expr + "|" + (blink ? 1 : 0) + "|" + variant + "|" + look;
+    if (!cache[key]) cache[key] = buildCanvas(expr, blink, variant, look);
     return cache[key];
   }
 
@@ -306,7 +351,8 @@
 
     // pixelový sprite
     var variant = e === "rage" ? "rage" : (tier === 2 ? "tier2" : "base");
-    var img = getCanvas(e, this.blinking > 0, variant);
+    var look = (e === "neutral" && !this.sunglasses) ? this.look : 0;
+    var img = getCanvas(e, this.blinking > 0, variant, look);
     var cell = 100 / GH;                       // výška mřížky = celý rám
     var wPx = GW * cell;
     var ox = (100 - wPx) / 2;
