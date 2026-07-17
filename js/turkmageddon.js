@@ -1871,7 +1871,7 @@
 
   // Příspěvek na benzín — sem vlož BTC adresu; dokud je prázdná,
   // tlačítka se vůbec nezobrazí (mini ₿ na startu, plné na game overu)
-  var BTC_ADDRESS = "";
+  var BTC_ADDRESS = "bc1qeqx062v5u85z33pfzj3atjjx08dz3ut08dqp0k";
   (function initDonate() {
     if (!BTC_ADDRESS) return;
     function wire(toggleId, boxId, addrId, copyId, linkId) {
