@@ -27,7 +27,7 @@
     this.engineGain.gain.value = 0;
     this.engineLp = this.ctx.createBiquadFilter();
     this.engineLp.type = "lowpass";
-    this.engineLp.frequency.value = 180;
+    this.engineLp.frequency.value = 240;
     this.engineGain.connect(this.engineLp);
     this.engineLp.connect(this.master);
 
@@ -42,13 +42,23 @@
     this.sub.frequency.value = 17;
     var subG = this.ctx.createGain();
     subG.gain.value = 1.4;
+    // střední harmonická vrstva — malé reproduktory (mobil) hluboké
+    // frekvence nepřehrají, tahle nese motor i tam
+    this.osc3 = this.ctx.createOscillator();
+    this.osc3.type = "sawtooth";
+    this.osc3.frequency.value = 136;
+    var o3g = this.ctx.createGain();
+    o3g.gain.value = 0.55;
     this.osc1.connect(this.engineGain);
     this.osc2.connect(this.engineGain);
     this.sub.connect(subG);
     subG.connect(this.engineGain);
+    this.osc3.connect(o3g);
+    o3g.connect(this.engineGain);
     this.osc1.start();
     this.osc2.start();
     this.sub.start();
+    this.osc3.start();
 
     // LFO moduluje hlasitost motoru — loping idle velkého osmiválce
     this.lfo = this.ctx.createOscillator();
@@ -77,12 +87,13 @@
   AudioSys.prototype.setEngine = function (speed01, running) {
     if (!this.ctx) return;
     var t = this.ctx.currentTime;
-    var target = running ? 0.055 + speed01 * 0.05 : 0;
+    var target = running ? 0.07 + speed01 * 0.06 : 0;
     this.engineGain.gain.setTargetAtTime(target, t, 0.08);
     this.osc1.frequency.setTargetAtTime(34 + speed01 * 62, t, 0.05);
     this.osc2.frequency.setTargetAtTime(17.9 + speed01 * 32, t, 0.05);
     this.sub.frequency.setTargetAtTime(17 + speed01 * 31, t, 0.05);
-    this.engineLp.frequency.setTargetAtTime(150 + speed01 * 360, t, 0.1);
+    this.osc3.frequency.setTargetAtTime(136 + speed01 * 248, t, 0.05);
+    this.engineLp.frequency.setTargetAtTime(220 + speed01 * 700, t, 0.1);
     this.lfo.frequency.setTargetAtTime(6 + speed01 * 10, t, 0.1);
   };
 
@@ -113,14 +124,14 @@
 
   // cinknutí za červenou
   AudioSys.prototype.ding = function () {
-    this._beep("square", 1046, 0.09, 0.12);
-    this._beep("square", 1568, 0.09, 0.1, 0.09);
+    this._beep("square", 1046, 0.09, 0.06);
+    this._beep("square", 1568, 0.09, 0.05, 0.09);
   };
 
   // bzučák za sanitku
   AudioSys.prototype.penalty = function () {
-    this._beep("sawtooth", 130, 0.35, 0.18);
-    this._beep("sawtooth", 98, 0.35, 0.18, 0.05);
+    this._beep("sawtooth", 130, 0.35, 0.12);
+    this._beep("sawtooth", 98, 0.35, 0.12, 0.05);
   };
 
   // klesající tón při KO

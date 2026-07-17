@@ -246,8 +246,11 @@
     else if (input.down) speed -= 125 * dt;
     else speed -= 12 * dt;
 
-    // zatáčení žere rychlost — BOMBY udržíš jen rovně
-    if (steer !== 0) speed -= dt * (20 + 70 * (speed / MAXS));
+    // zatáčení žere rychlost úměrně výchylce — plný rejd brzdí naplno,
+    // jemné korekce (mobilní joystick) skoro nic
+    if (steer !== 0) {
+      speed -= dt * (20 + 70 * (speed / MAXS)) * Math.abs(steer);
+    }
 
     var offroad = Math.abs(playerX) > 1.02;
     if (offroad && speed > 70) speed -= 100 * dt;
@@ -1798,8 +1801,10 @@
     input.steerX = Math.abs(dx) > JOY_DEAD
       ? Math.max(-1, Math.min(1, (dx - (dx > 0 ? JOY_DEAD : -JOY_DEAD)) / JOY_RANGE))
       : 0;
-    input.up = dy < -JOY_DEAD;
-    input.down = dy > JOY_DEAD;
+    // Turek jezdí jenom naplno: dokud se hráč dotýká, drží se plný plyn;
+    // brzdí se až výrazným stažením prstu dolů
+    input.down = dy > 30;
+    input.up = !input.down;
   }
 
   function joyRelease() {

@@ -31,9 +31,9 @@ Hra je statická, takže funguje i na GitHub Pages
 | Esc | pauza |
 
 Na dotykových zařízeních se ovládá **plovoucím joystickem**: polož prst
-kamkoli na obraz hry (tam vznikne střed) a táhni — **nahoru** plyn,
-**do stran** plynulé řízení, **dolů** brzda; diagonála kombinuje obojí.
-Vpravo nahoře je **❚❚** pauza.
+kamkoli na obraz hry (tam vznikne střed). Dokud se dotýkáš, **jede se
+naplno** — Turek jinak nejezdí. Tažením **do stran** plynule řídíš,
+výrazným stažením **dolů** brzdíš. Vpravo nahoře je **❚❚** pauza.
 
 ## Pravidla
 
