@@ -547,7 +547,7 @@
     }
 
     state = "article";
-    audio.setEngine(0, false);
+    audio.stall();                               // motor chcípne
     articleReadyAt = performance.now() + 1200;   // zámek proti náhodnému stisku
     elArticle.classList.remove("hidden");
     var hint = document.getElementById("np-continue");
@@ -571,7 +571,7 @@
     over = true;
     face.trigger("ko");
     audio.ko();
-    audio.setEngine(0, false);
+    audio.stall();
     if (score > best) {
       best = score;
       localStorage.setItem("gta_best_stunts", String(best));

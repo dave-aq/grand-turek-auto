@@ -88,7 +88,10 @@
     if (!this.ctx) return;
     var t = this.ctx.currentTime;
     var target = running ? 0.07 + speed01 * 0.06 : 0;
+    this.engineGain.gain.cancelScheduledValues(t);
     this.engineGain.gain.setTargetAtTime(target, t, 0.08);
+    // LFO jen když motor běží — jinak by v tichu pulzoval
+    this.lfoGain.gain.setTargetAtTime(running ? 0.014 : 0, t, 0.15);
     this.osc1.frequency.setTargetAtTime(34 + speed01 * 62, t, 0.05);
     this.osc2.frequency.setTargetAtTime(17.9 + speed01 * 32, t, 0.05);
     this.sub.frequency.setTargetAtTime(17 + speed01 * 31, t, 0.05);
@@ -132,6 +135,27 @@
   AudioSys.prototype.penalty = function () {
     this._beep("sawtooth", 130, 0.35, 0.12);
     this._beep("sawtooth", 98, 0.35, 0.12, 0.05);
+  };
+
+  // motor chcípá: otáčky spadnou, pár škytnutí, ticho
+  AudioSys.prototype.stall = function () {
+    if (!this.ctx) return;
+    var t = this.ctx.currentTime;
+    this.osc1.frequency.setTargetAtTime(16, t, 0.35);
+    this.osc2.frequency.setTargetAtTime(8, t, 0.35);
+    this.sub.frequency.setTargetAtTime(8, t, 0.35);
+    this.osc3.frequency.setTargetAtTime(60, t, 0.35);
+    this.engineLp.frequency.setTargetAtTime(120, t, 0.3);
+    var g = this.engineGain.gain;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(Math.max(g.value, 0.06), t);
+    g.exponentialRampToValueAtTime(0.02, t + 0.25);
+    g.setValueAtTime(0.09, t + 0.32);
+    g.exponentialRampToValueAtTime(0.015, t + 0.55);
+    g.setValueAtTime(0.07, t + 0.65);
+    g.exponentialRampToValueAtTime(0.0001, t + 1.4);
+    g.setValueAtTime(0, t + 1.45);
+    this.lfoGain.gain.setTargetAtTime(0, t, 0.3);
   };
 
   // klesající tón při KO
