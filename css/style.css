@@ -129,6 +129,60 @@ body.touch .touch-note { display: block; }
   line-height: 1.4;
 }
 
+/* Decentní příspěvek na benzín */
+.donate-toggle {
+  font: bold 12px "Arial Narrow", Arial, sans-serif;
+  letter-spacing: 1px;
+  padding: 5px 12px;
+  border: 1px solid #6a5a2a;
+  border-radius: 12px;
+  background: transparent;
+  color: #b9a25e;
+  box-shadow: none;
+}
+.donate-toggle:hover {
+  transform: none;
+  box-shadow: none;
+  color: #ffd23f;
+  border-color: #ffd23f;
+}
+.donate-toggle.hidden, .donate-box.hidden { display: none; }
+
+.donate-box {
+  background: #1b1b22;
+  border: 1px solid #6a5a2a;
+  border-radius: 8px;
+  padding: 10px 14px;
+  max-width: 92%;
+}
+.donate-box code {
+  display: block;
+  font: 12px monospace;
+  color: #e8e8e8;
+  word-break: break-all;
+  margin-bottom: 8px;
+}
+.donate-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+}
+.donate-actions button {
+  font: bold 12px "Arial Narrow", Arial, sans-serif;
+  padding: 4px 10px;
+  border: 1px solid #6a5a2a;
+  border-radius: 10px;
+  background: transparent;
+  color: #b9a25e;
+  box-shadow: none;
+}
+.donate-actions button:hover { transform: none; box-shadow: none; color: #ffd23f; }
+.donate-actions a {
+  font: 12px "Arial Narrow", Arial, sans-serif;
+  color: #b9a25e;
+}
+
 /* Game-over newspaper */
 .newspaper {
   background: #f4ecd8;

@@ -1848,6 +1848,30 @@
 
   document.getElementById("t-pause").addEventListener("click", togglePause);
 
+  // Příspěvek na benzín — sem vlož BTC adresu; dokud je prázdná,
+  // tlačítko se vůbec nezobrazí
+  var BTC_ADDRESS = "";
+  (function initDonate() {
+    if (!BTC_ADDRESS) return;
+    var toggle = document.getElementById("donate-toggle");
+    var box = document.getElementById("donate-box");
+    var copyBtn = document.getElementById("donate-copy");
+    document.getElementById("donate-addr").textContent = BTC_ADDRESS;
+    document.getElementById("donate-link").href = "bitcoin:" + BTC_ADDRESS;
+    toggle.classList.remove("hidden");
+    toggle.addEventListener("click", function () {
+      box.classList.toggle("hidden");
+    });
+    copyBtn.addEventListener("click", function () {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(BTC_ADDRESS).then(function () {
+          copyBtn.textContent = "Zkopírováno ✓";
+          setTimeout(function () { copyBtn.textContent = "Zkopírovat"; }, 1500);
+        });
+      }
+    });
+  })();
+
   // bleskovou zprávu odklikne i ťuknutí (po uplynutí zámku)
   elArticle.addEventListener("pointerdown", function (e) {
     e.preventDefault();
