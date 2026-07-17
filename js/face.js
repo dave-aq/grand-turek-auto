@@ -245,15 +245,13 @@
       "....PPPP.",
       "....PPP.."
     ] },
-    // GRIT: urputné soustředění při plynulé jízdě
-    browsGrit:   { x: 10, y: 14, rows: [
-      ".BBBBBB..BBBBBB.",
-      "......B..B......"
-    ] },
-    mouthGrit:   { x: 12, y: 28, rows: [
-      "k.........k",
-      ".kkkkkkkkk.",
-      ".sssssssss."
+    // GRIT: doomovský zaťatý škleb — véčka a plná mřížka zubů
+    mouthGrit:   { x: 11, y: 26, rows: [
+      ".kkkkkkkkkkkk.",
+      "kTTTTTTTTTTTTk",
+      "kkkkkkkkkkkkkk",
+      "kTTTTTTTTTTTTk",
+      ".kkkkkkkkkkkk."
     ] },
     // pohled do strany (Doom look)
     eyesLookL:   { x: 10, y: 15, rows: [
@@ -277,7 +275,7 @@
     smug:    ["browsSmug", "eyesOpen", "mouthSmug"],
     disgust: ["browsFlat", "eyesNarrow", "mouthDisgust"],
     most:    ["browsRaised", "eyesHappy", "mouthLick"],
-    grit:    ["eyesNarrow", "browsGrit", "mouthGrit"]
+    grit:    ["eyesOpen", "browsRage", "mouthGrit"]
   };
 
   var cache = {};
