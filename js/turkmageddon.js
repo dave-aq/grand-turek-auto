@@ -1216,10 +1216,13 @@
     line(0, DASH_TOP + 9, W, DASH_TOP + 9);
     ctx.setLineDash([]);
 
-    // levý hliníkový panel s kruhovými výdechy
-    rr(24, 366, 150, 58, 29, "#b9c0c7");
-    drawVent(64, 395, 22);
-    drawVent(134, 395, 22);
+    // levý kruhový výdech (strana řidiče) + spínač světel, jako v reálu
+    rr(36, 366, 76, 76, 16, "#b9c0c7");
+    drawVent(74, 404, 26);
+    circle(142, 404, 13, "#101114");
+    circle(142, 404, 10, "#3a3e44");
+    ctx.fillStyle = "#8f979e";
+    ctx.fillRect(140.5, 395, 3, 9);
 
     // přístrojový štít (widescreen se dvěma kulatými budíky)
     rr(198, 358, 244, 64, 10, "#0a0b0d");
@@ -1259,11 +1262,23 @@
       ctx.fillText("rekord: " + fmt(best), 484, 420);
     }
 
-    // střední panel s výdechy pod displejem
+    // střední panel: dva výdechy okolo bloku přepínačů (jako v reálném G)
     rr(470, 436, 160, 38, 10, "#b9c0c7");
-    drawVent(505, 455, 13);
-    drawVent(550, 455, 13);
-    drawVent(595, 455, 13);
+    drawVent(494, 455, 14);
+    drawVent(606, 455, 14);
+    rr(518, 442, 64, 26, 6, "#101114");
+    for (var sw = 0; sw < 3; sw++) {
+      ctx.fillStyle = "#8f979e";
+      ctx.fillRect(527 + sw * 20, 447, 8, 16);
+      ctx.fillStyle = "#dfe3e8";
+      ctx.fillRect(527 + sw * 20, 447, 8, 6);
+    }
+
+    // madlo spolujezdce — ikonický detail G
+    rr(500, 341, 118, 11, 5, "#17181b");
+    ctx.fillStyle = "#b9c0c7";
+    ctx.fillRect(505, 344, 8, 11);
+    ctx.fillRect(605, 344, 8, 11);
 
     drawWheel();
     drawMirror();
@@ -1274,16 +1289,17 @@
     rr(cx - 6, baseY - 13, 12, 5, 2, "#ffb62e");
   }
 
+  // turbínový výdech s hustými zakřivenými lamelami (jako v reálném G)
   function drawVent(cx, cy, r) {
     circle(cx, cy, r, "#8f979e");
     circle(cx, cy, r - 2, "#1f2124");
-    ctx.strokeStyle = "#585d64"; ctx.lineWidth = 2;
-    for (var i = 0; i < 8; i++) {
-      var a = i * Math.PI / 4 + 0.4;
-      line(cx + Math.cos(a) * r * 0.35, cy + Math.sin(a) * r * 0.35,
-           cx + Math.cos(a) * (r - 4), cy + Math.sin(a) * (r - 4));
+    ctx.strokeStyle = "#585d64"; ctx.lineWidth = 1.4;
+    for (var i = 0; i < 12; i++) {
+      var a = i * Math.PI / 6 + 0.26;
+      line(cx + Math.cos(a) * r * 0.3, cy + Math.sin(a) * r * 0.3,
+           cx + Math.cos(a + 0.38) * (r - 3.5), cy + Math.sin(a + 0.38) * (r - 3.5));
     }
-    circle(cx, cy, r * 0.28, "#b9c0c7");
+    circle(cx, cy, r * 0.24, "#b9c0c7");
   }
 
   // trojcípá hvězda v kroužku (pocta předloze)
