@@ -1849,27 +1849,32 @@
   document.getElementById("t-pause").addEventListener("click", togglePause);
 
   // Příspěvek na benzín — sem vlož BTC adresu; dokud je prázdná,
-  // tlačítko se vůbec nezobrazí
+  // tlačítka se vůbec nezobrazí (mini ₿ na startu, plné na game overu)
   var BTC_ADDRESS = "";
   (function initDonate() {
     if (!BTC_ADDRESS) return;
-    var toggle = document.getElementById("donate-toggle");
-    var box = document.getElementById("donate-box");
-    var copyBtn = document.getElementById("donate-copy");
-    document.getElementById("donate-addr").textContent = BTC_ADDRESS;
-    document.getElementById("donate-link").href = "bitcoin:" + BTC_ADDRESS;
-    toggle.classList.remove("hidden");
-    toggle.addEventListener("click", function () {
-      box.classList.toggle("hidden");
-    });
-    copyBtn.addEventListener("click", function () {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(BTC_ADDRESS).then(function () {
-          copyBtn.textContent = "Zkopírováno ✓";
-          setTimeout(function () { copyBtn.textContent = "Zkopírovat"; }, 1500);
-        });
-      }
-    });
+    function wire(toggleId, boxId, addrId, copyId, linkId) {
+      var toggle = document.getElementById(toggleId);
+      var box = document.getElementById(boxId);
+      var copyBtn = document.getElementById(copyId);
+      document.getElementById(addrId).textContent = BTC_ADDRESS;
+      document.getElementById(linkId).href = "bitcoin:" + BTC_ADDRESS;
+      toggle.classList.remove("hidden");
+      toggle.addEventListener("click", function () {
+        box.classList.toggle("hidden");
+      });
+      copyBtn.addEventListener("click", function () {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(BTC_ADDRESS).then(function () {
+            copyBtn.textContent = "Zkopírováno ✓";
+            setTimeout(function () { copyBtn.textContent = "Zkopírovat"; }, 1500);
+          });
+        }
+      });
+    }
+    wire("donate-mini", "donate-box", "donate-addr", "donate-copy", "donate-link");
+    wire("donate-toggle-over", "donate-box-over", "donate-addr-over",
+         "donate-copy-over", "donate-link-over");
   })();
 
   // bleskovou zprávu odklikne i ťuknutí (po uplynutí zámku)
