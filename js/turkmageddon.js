@@ -22,6 +22,7 @@
   var MAXS = 325;                  // km/h — rekord od Ostravy
   var UNITS = 55;                  // světové jednotky za s na 1 km/h
   var CENTRIFUGAL = 0.28;
+  var MAX_HP = 180;                // výdrž karoserie — hranatá legenda
   var FOG_DENSITY = 5;
   var DASH_TOP = H - 128;
 
@@ -169,12 +170,13 @@
   var cars, floats, sparks, cracks, banners, shake, rageCd, over, mtOff;
   var flowActive, flowOstrava, flowTotal, flowCarry;
   var crossers;   // nesanitky přejíždějící křižovatku zleva doprava
+  var articleReadyAt = 0;
 
   best = parseInt(localStorage.getItem("gta_best_stunts") || "0", 10);
 
   function reset() {
     position = 0; prevPos = 0; speed = 0; playerX = 0; wheelAngle = 0;
-    health = 100; lastTier = 0; score = 0; combo = 0; comboTimer = 0;
+    health = MAX_HP; lastTier = 0; score = 0; combo = 0; comboTimer = 0;
     wrecksN = 0; distanceM = 0; timeT = 0;
     floats = []; sparks = []; cracks = []; banners = [];
     shake = 0; rageCd = 0; mtOff = 0;
@@ -369,12 +371,12 @@
       var zone = mostarnas[mz];
       var relZ = (zone.midZ - position + trackLen) % trackLen;
       if (zone.used && relZ > 60 * SEG_L && relZ < trackLen / 2) zone.used = false;
-      if (!zone.used && health < 100 && playerX > 0.8 && speed < 100 &&
+      if (!zone.used && health < MAX_HP && playerX > 0.8 && speed < 100 &&
           playerSeg >= zone.start && playerSeg <= zone.end) {
         zone.used = true;
-        var heal = Math.min(50, 100 - health);
+        var heal = Math.min(80, MAX_HP - health);
         health += heal;
-        lastTier = health > 66 ? 0 : health > 33 ? 1 : 2;
+        lastTier = hpTier();
         cracks = [];                       // čelní sklo jako nové
         face.trigger("kill");
         audio.ding();
@@ -399,7 +401,7 @@
     shake = Math.max(0, shake - dt);
     mtOff -= base.curve * speedPct * dt * 1.4;
 
-    face.update(dt, { health: health, sunglasses: comboTimer > 0 && combo >= 3 });
+    face.update(dt, { health: (health / MAX_HP) * 100, sunglasses: comboTimer > 0 && combo >= 3 });
     audio.setEngine(speedPct, true);
   }
 
@@ -457,13 +459,17 @@
 
     health -= dmg;
     face.trigger("pain");
-    var tier = health > 66 ? 0 : health > 33 ? 1 : 2;
+    var tier = hpTier();
     if (tier > lastTier) addCrack();
     lastTier = tier;
     if (health <= 0) {
       health = 0;
       gameOver();
     }
+  }
+
+  function hpTier() {
+    return health > MAX_HP * 0.66 ? 0 : health > MAX_HP * 0.33 ? 1 : 2;
   }
 
   // čelní střet s nesanitkou na křižovatce → freeze a blesková zpráva
@@ -478,7 +484,7 @@
     speed *= 0.3;
 
     health -= 30 * 1.4;
-    var tier = health > 66 ? 0 : health > 33 ? 1 : 2;
+    var tier = hpTier();
     if (tier > lastTier) addCrack();
     lastTier = tier;
     if (health <= 0) {
@@ -488,16 +494,23 @@
 
     state = "article";
     audio.setEngine(0, false);
+    articleReadyAt = performance.now() + 1200;   // zámek proti náhodnému stisku
     elArticle.classList.remove("hidden");
+    var hint = document.getElementById("np-continue");
+    hint.classList.remove("show");
     setTimeout(function () {
-      elArticle.classList.add("hidden");
-      if (state !== "article") return;
-      if (over) {
-        showGameOver();
-      } else {
-        state = "playing";
-      }
-    }, 3400);
+      if (state === "article") hint.classList.add("show");
+    }, 1200);
+  }
+
+  function dismissArticle() {
+    if (state !== "article") return;
+    elArticle.classList.add("hidden");
+    if (over) {
+      showGameOver();
+    } else {
+      state = "playing";
+    }
   }
 
   function gameOver() {
@@ -1222,10 +1235,11 @@
     ctx.fillStyle = "#9aa0a8"; ctx.font = "9px Arial";
     ctx.fillText("km/h", 320, 403);
     // stav karoserie jako proužek ve štítu
+    var hp01 = health / MAX_HP;
     ctx.fillStyle = "#0f0f12";
     ctx.fillRect(284, 406, 72, 8);
-    ctx.fillStyle = health > 50 ? "#42e05c" : health > 25 ? "#ffb62e" : "#ff3131";
-    ctx.fillRect(286, 408, Math.max(0, health / 100) * 68, 4);
+    ctx.fillStyle = hp01 > 0.5 ? "#42e05c" : hp01 > 0.25 ? "#ffb62e" : "#ff3131";
+    ctx.fillRect(286, 408, Math.max(0, hp01) * 68, 4);
 
     // infotainment displej vpravo — skóre jako palubní obrazovka
     rr(470, 358, 160, 72, 8, "#0a0b0d");
@@ -1433,7 +1447,7 @@
     }
 
     // DOJEZDOVÁ TÍSEŇ — bliká, když je karoserie skoro na šrot
-    if (health < 25 && health > 0 && Math.floor(timeT * 2.5) % 3 !== 2) {
+    if (health < MAX_HP * 0.25 && health > 0 && Math.floor(timeT * 2.5) % 3 !== 2) {
       ctx.save();
       ctx.textAlign = "center";
       ctx.lineJoin = "round";
@@ -1618,6 +1632,13 @@
   };
 
   window.addEventListener("keydown", function (e) {
+    // blesková zpráva: pokračuje se libovolnou ČERSTVOU klávesou
+    // (auto-repeat držené šipky článek neodklikne)
+    if (state === "article") {
+      if (!e.repeat && performance.now() >= articleReadyAt) dismissArticle();
+      e.preventDefault();
+      return;
+    }
     if (e.code in KEYMAP) { input[KEYMAP[e.code]] = true; e.preventDefault(); }
     if (e.code === "KeyM") audio.toggleMute();
     if (e.code === "Enter" && state === "menu") start();
@@ -1705,6 +1726,12 @@
 
   document.getElementById("t-pause").addEventListener("click", togglePause);
 
+  // bleskovou zprávu odklikne i ťuknutí (po uplynutí zámku)
+  elArticle.addEventListener("pointerdown", function (e) {
+    e.preventDefault();
+    if (performance.now() >= articleReadyAt) dismissArticle();
+  });
+
   function clearInput() {
     input.left = input.right = input.up = input.down = false;
     input.steerX = 0;
@@ -1772,7 +1799,7 @@
       update(dt);
       if (over && state === "playing") showGameOver();
     } else if (state !== "paused") {
-      face.update(dt, { health: health, sunglasses: false });
+      face.update(dt, { health: (health / MAX_HP) * 100, sunglasses: false });
       updateBanners(dt);
     }
 

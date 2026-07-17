@@ -176,3 +176,22 @@ body.touch .touch-note { display: block; }
   font-style: italic;
   line-height: 1.4;
 }
+
+.np-continue {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.np-continue.show {
+  opacity: 1;
+  animation: npBlink 1.1s infinite;
+}
+@keyframes npBlink {
+  0%, 60% { opacity: 1; }
+  61%, 100% { opacity: 0.25; }
+}
