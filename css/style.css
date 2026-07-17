@@ -51,11 +51,12 @@ body.touch {
 .overlay.hidden { display: none; }
 
 .overlay h1 {
-  font-size: 56px;
+  font-size: clamp(26px, 10.5vw, 56px);
   line-height: 0.95;
   letter-spacing: 2px;
   color: #ffd23f;
   text-shadow: 4px 4px 0 #a1121a, 7px 7px 0 #000;
+  max-width: 100vw;
 }
 
 .tagline { font-style: italic; color: #bbb; }
