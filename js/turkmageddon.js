@@ -1460,9 +1460,9 @@
       ctx.font = "italic bold 15px Arial";
       ctx.lineWidth = 4;
       ctx.strokeStyle = "#000";
-      ctx.strokeText("moštárna to jistí", W / 2, 322);
+      ctx.strokeText("čas na mošt", W / 2, 322);
       ctx.fillStyle = "#e8e8e8";
-      ctx.fillText("moštárna to jistí", W / 2, 322);
+      ctx.fillText("čas na mošt", W / 2, 322);
       ctx.restore();
     }
     for (var i = 0; i < banners.length; i++) {
