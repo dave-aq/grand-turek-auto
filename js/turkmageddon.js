@@ -168,6 +168,7 @@
   var health, lastTier, score, best, combo, comboTimer, wrecksN, distanceM, timeT;
   var cars, floats, sparks, cracks, banners, shake, rageCd, over, mtOff;
   var flowActive, flowOstrava, flowTotal, flowCarry;
+  var crossers;   // nesanitky přejíždějící křižovatku zleva doprava
 
   best = parseInt(localStorage.getItem("gta_best_stunts") || "0", 10);
 
@@ -179,6 +180,8 @@
     shake = 0; rageCd = 0; mtOff = 0;
     flowActive = false; flowOstrava = false; flowTotal = 0; flowCarry = 0;
     for (var z = 0; z < mostarnas.length; z++) mostarnas[z].used = false;
+    crossers = [];
+    for (var gi = 0; gi < gantries.length; gi++) gantries[gi].crosserDone = false;
     over = false;
     face.reset();
     cars = [];
@@ -319,6 +322,21 @@
     var travel = (position - prevPos + trackLen) % trackLen;
     for (var g = 0; g < gantries.length; g++) {
       var ga = gantries[g];
+      var relGa = (ga.z - position + trackLen) % trackLen;
+
+      // při přiblížení ke křižovatce šance, že ji zrovna přejíždí nesanitka
+      if (!ga.crosserDone && relGa < 58 * SEG_L && relGa > 40 * SEG_L) {
+        ga.crosserDone = true;
+        if (Math.random() < 0.55) {
+          crossers.push({
+            z: ga.z - 3 * SEG_L,           // v místě přechodu
+            offset: -2.8,
+            v: 1.2 + Math.random() * 0.7   // rychlost přejezdu zleva doprava
+          });
+        }
+      }
+      if (ga.crosserDone && relGa > trackLen / 2) ga.crosserDone = false;
+
       var relBefore = (ga.z - (prevPos + PLAYER_Z) + trackLen) % trackLen;
       if (relBefore < travel) {
         // rozhoduje semafor pruhu, kterým hráč zrovna projíždí
@@ -329,6 +347,19 @@
           audio.ding();
           addFloat(W / 2, H * 0.4, "Na červenou! +200", "#ff5d5d");
         }
+      }
+    }
+
+    // --- přejíždějící nesanitky ---
+    for (var cr2 = crossers.length - 1; cr2 >= 0; cr2--) {
+      var cr = crossers[cr2];
+      cr.offset += cr.v * dt;
+      if (cr.offset > 2.9) { crossers.splice(cr2, 1); continue; }
+      var relCr = (cr.z - position + trackLen) % trackLen;
+      if (relCr > PLAYER_Z - 300 && relCr < PLAYER_Z + 320 &&
+          Math.abs(cr.offset - playerX) < 0.45 && speed > 15) {
+        crossers.splice(cr2, 1);
+        hitCrosser();
       }
     }
 
@@ -433,6 +464,40 @@
       health = 0;
       gameOver();
     }
+  }
+
+  // čelní střet s nesanitkou na křižovatce → freeze a blesková zpráva
+  function hitCrosser() {
+    score += 500;
+    combo = 0; comboTimer = 0;
+    face.trigger("panic");
+    audio.penalty();
+    audio.crash(1);
+    shake = Math.max(shake, 0.6);
+    spawnSparks(W / 2, H * 0.55);
+    speed *= 0.3;
+
+    health -= 30 * 1.4;
+    var tier = health > 66 ? 0 : health > 33 ? 1 : 2;
+    if (tier > lastTier) addCrack();
+    lastTier = tier;
+    if (health <= 0) {
+      health = 0;
+      gameOver();
+    }
+
+    state = "article";
+    audio.setEngine(0, false);
+    elArticle.classList.remove("hidden");
+    setTimeout(function () {
+      elArticle.classList.add("hidden");
+      if (state !== "article") return;
+      if (over) {
+        showGameOver();
+      } else {
+        state = "playing";
+      }
+    }, 3400);
   }
 
   function gameOver() {
@@ -589,6 +654,11 @@
       var arr = buckets[sg.index];
       if (arr) {
         for (var k = 0; k < arr.length; k++) drawCarSprite(sg, arr[k]);
+      }
+      for (var cq = 0; cq < crossers.length; cq++) {
+        if (Math.floor(crossers[cq].z / SEG_L) % N === sg.index) {
+          drawCrosser(sg, crossers[cq]);
+        }
       }
     }
 
@@ -1042,6 +1112,44 @@
     ctx.restore();
   }
 
+  // nesanitka přejíždějící křižovatku — boční pohled, jede zleva doprava
+  function drawCrosser(seg, cr) {
+    var pct = (cr.z % SEG_L) / SEG_L;
+    var scale = lerp(seg.p1.screen.scale, seg.p2.screen.scale, pct);
+    var roadX = lerp(seg.p1.screen.x, seg.p2.screen.x, pct);
+    var baseY = lerp(seg.p1.screen.y, seg.p2.screen.y, pct);
+    var cx = roadX + scale * cr.offset * ROAD_W * (W / 2);
+    var wPx = scale * (W / 2) * 950;
+    if (wPx < 4) return;
+
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, W, seg.clip); ctx.clip();
+    ctx.translate(cx, baseY);
+    var s = wPx / 100;
+    ctx.scale(s, s);
+
+    // kola
+    circle(-30, -6, 8, "#191b1e");
+    circle(30, -6, 8, "#191b1e");
+    circle(-30, -6, 3.5, "#6a6f76");
+    circle(30, -6, 3.5, "#6a6f76");
+    // karoserie z boku (dodávka), kabina vpravo — jede doprava
+    rr(-50, -40, 100, 32, 6, "#f2f2f2");
+    ctx.fillStyle = "#e02121";
+    ctx.fillRect(-50, -24, 100, 7);
+    // okna: kabina + bok
+    ctx.fillStyle = "#22262c";
+    ctx.fillRect(28, -37, 18, 11);
+    ctx.fillRect(-44, -37, 24, 10);
+    // červený kříž na boku
+    ctx.fillStyle = "#e02121";
+    ctx.fillRect(-6, -35, 16, 5);
+    ctx.fillRect(-0.5, -40.5, 5, 16);
+    // maják bliká
+    if (Math.floor(timeT * 6) % 2 === 0) circle(10, -43, 4, "#4aa8ff");
+    ctx.restore();
+  }
+
   /* ----------------------------- kokpit ----------------------------- */
 
   function drawCockpit() {
@@ -1419,9 +1527,67 @@
 
   var elStart = document.getElementById("overlay-start");
   var elOver = document.getElementById("overlay-over");
+  var elArticle = document.getElementById("overlay-article");
   var elHeadline = document.getElementById("np-headline");
   var elStats = document.getElementById("np-stats");
   var elBest = document.getElementById("np-best");
+
+  // ilustrace do bleskové zprávy: nesanitka totálně na střeše
+  (function drawArticleArt() {
+    var el = document.getElementById("np-art");
+    if (!el) return;
+    var a = el.getContext("2d");
+    // obloha a vozovka s kolejemi
+    a.fillStyle = "#cfd8de"; a.fillRect(0, 0, 300, 70);
+    a.fillStyle = "#55555e"; a.fillRect(0, 70, 300, 80);
+    a.fillStyle = "#3a3a40";
+    a.fillRect(0, 116, 300, 4);
+    a.fillRect(0, 128, 300, 4);
+    a.fillStyle = "#e8e8e0";
+    for (var zx = 10; zx < 300; zx += 34) a.fillRect(zx, 74, 18, 6);
+
+    // stín pod vrakem
+    a.fillStyle = "rgba(0,0,0,0.3)";
+    a.beginPath(); a.ellipse(150, 112, 88, 10, 0, 0, Math.PI * 2); a.fill();
+
+    // vrak na střeše: kola nahoře, zmačkaná střecha dole
+    a.fillStyle = "#191b1e";
+    a.beginPath(); a.arc(105, 52, 13, 0, Math.PI * 2); a.fill();
+    a.beginPath(); a.arc(195, 52, 13, 0, Math.PI * 2); a.fill();
+    a.fillStyle = "#6a6f76";
+    a.beginPath(); a.arc(105, 52, 5, 0, Math.PI * 2); a.fill();
+    a.beginPath(); a.arc(195, 52, 5, 0, Math.PI * 2); a.fill();
+    a.fillStyle = "#f0f0f0";
+    a.beginPath();
+    a.moveTo(72, 60); a.lineTo(228, 60); a.lineTo(224, 96);
+    a.lineTo(200, 108); a.lineTo(96, 108); a.lineTo(76, 94);
+    a.closePath(); a.fill();
+    a.fillStyle = "#e02121";
+    a.fillRect(74, 70, 152, 8);
+    // kříž vzhůru nohama (je to jedno, ale ať je vidět)
+    a.fillRect(138, 86, 24, 7);
+    a.fillRect(146.5, 78, 7, 24);
+    // prasklá okna u země
+    a.fillStyle = "#22262c";
+    a.fillRect(84, 96, 34, 8);
+    a.fillRect(186, 96, 26, 8);
+    a.strokeStyle = "#f6f6f6"; a.lineWidth = 1.5;
+    a.beginPath(); a.moveTo(90, 104); a.lineTo(100, 96); a.lineTo(108, 103); a.stroke();
+    // střepy
+    a.fillStyle = "#eef4f8";
+    a.fillRect(66, 108, 5, 3); a.fillRect(236, 106, 6, 3); a.fillRect(120, 111, 4, 3);
+    // kouř
+    a.fillStyle = "rgba(120,120,126,0.65)";
+    a.beginPath(); a.arc(232, 44, 9, 0, Math.PI * 2); a.fill();
+    a.beginPath(); a.arc(243, 30, 12, 0, Math.PI * 2); a.fill();
+    a.beginPath(); a.arc(256, 14, 15, 0, Math.PI * 2); a.fill();
+    // hvězdičky nad vrakem
+    a.fillStyle = "#d9a441";
+    a.font = "bold 16px Arial";
+    a.fillText("✶", 128, 34);
+    a.fillText("✶", 158, 24);
+    a.fillText("✶", 186, 38);
+  })();
 
   var HEADLINES = [
     "NEJEZDĚTE JAK DEBILOVÉ!",
@@ -1557,6 +1723,7 @@
     reset();
     clearInput();
     elOver.classList.add("hidden");
+    elArticle.classList.add("hidden");
     state = "playing";
   }
 
@@ -1579,6 +1746,18 @@
     face: face,
     boost: function (v) { speed = Math.min(MAXS, Math.max(0, v)); },
     damage: function (n) { health = Math.max(1, health - n); },
+    spawnCrosser: function (off, v) {
+      var c = { z: ((Math.floor((position + PLAYER_Z) / SEG_L) + 25) % N) * SEG_L,
+                offset: off === undefined ? -2.8 : off,
+                v: v === undefined ? 1.5 : v };
+      crossers.push(c);
+      return c;
+    },
+    crossers: function () {
+      return crossers.map(function (c) {
+        return { z: c.z, off: c.offset, rel: (c.z - position + trackLen) % trackLen };
+      });
+    },
     warp: function (segIdx) { position = ((segIdx % N) + N) % N * SEG_L; },
     zones: function () { return mostarnas.map(function (z) { return z.start; }); },
     stats: function () { return { speed: speed, health: health, score: score, x: playerX }; }
@@ -1591,7 +1770,7 @@
 
     if (state === "playing") {
       update(dt);
-      if (over) showGameOver();
+      if (over && state === "playing") showGameOver();
     } else if (state !== "paused") {
       face.update(dt, { health: health, sunglasses: false });
       updateBanners(dt);

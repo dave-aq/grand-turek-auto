@@ -158,3 +158,21 @@ body.touch .touch-note { display: block; }
 #np-stats { font-size: 15px; line-height: 1.55; }
 
 .np-best { margin-top: 8px; font-weight: bold; font-size: 14px; }
+
+#overlay-article { background: rgba(12, 12, 18, 0.6); }
+#overlay-article .newspaper { transform: rotate(1.2deg); }
+
+#np-art {
+  display: block;
+  width: 100%;
+  border: 2px solid #17130c;
+  margin: 4px 0 8px;
+  background: #cfd8de;
+  image-rendering: pixelated;
+}
+
+.np-caption {
+  font-size: 12px;
+  font-style: italic;
+  line-height: 1.4;
+}

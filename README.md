@@ -50,6 +50,10 @@ Vpravo nahoře je **❚❚** pauza.
 - Náraz do **sanitky** = krvavý titulek SKANDÁL přes obrazovku… a +500
   hlasů. Turek prostě nemůže prohrát. (Karoserie to ovšem schytá nejvíc
   a kombo spadne.)
+- Křižovatky občas **zleva doprava přejíždí nesanitka** — po čelním
+  střetu hra na moment zamrzne a vyskočí blesková zpráva „Jel jsem na
+  zelenou, pán má odřenou ruku" s vrakem na střeše (+500 hlasů,
+  velká rána do karoserie).
 - Skoro zničené auto hlásí **DOJEZDOVOU TÍSEŇ**; hra končí, když je
   karoserie na šrot.
 - Opravit karoserii jde v **MOŠTÁRNĚ** („rozhodně ne garáž") u silnice:
