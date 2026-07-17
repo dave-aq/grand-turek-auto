@@ -245,9 +245,10 @@
       "....PPPP.",
       "....PPP.."
     ] },
-    // GRIT: doomovský zaťatý škleb — véčka a plná mřížka zubů
-    mouthGrit:   { x: 11, y: 26, rows: [
-      ".kkkkkkkkkkkk.",
+    // GRIT: doomovský zaťatý škleb — koutky vytažené nahoru
+    mouthGrit:   { x: 11, y: 25, rows: [
+      ".kk........kk.",
+      "kTTkkkkkkkkTTk",
       "kTTTTTTTTTTTTk",
       "kkkkkkkkkkkkkk",
       "kTTTTTTTTTTTTk",
