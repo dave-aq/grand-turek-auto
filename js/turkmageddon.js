@@ -477,7 +477,7 @@
     spawnSparks(fx, fy);
 
     // hranatá legenda má Mercedes G — ten něco vydrží
-    var dmg = (1.8 + relKmh * 0.048) * (c.type.tough || 1);
+    var dmg = (1.9 + relKmh * 0.05) * (c.type.tough || 1);
 
     if (c.type.ambulance) {
       // skandál, ale hlasy to jen přidá — Turek prostě nemůže prohrát
@@ -537,7 +537,7 @@
     spawnSparks(W / 2, H * 0.55);
     speed *= 0.3;
 
-    health -= 18 * 1.4;
+    health -= 26;
     var tier = hpTier();
     if (tier > lastTier) addCrack();
     lastTier = tier;
