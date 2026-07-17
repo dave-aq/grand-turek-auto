@@ -1816,8 +1816,12 @@
   }
 
   if (isTouch) {
-    canvas.addEventListener("pointerdown", function (e) {
-      if (joy.active) return;              // druhý prst ignorujeme
+    // joystick funguje kdekoli na stránce (i mimo obraz hry) —
+    // souřadnice se jen přepočítají do prostoru plátna, důležité
+    // jsou stejně pouze rozdíly od středu
+    window.addEventListener("pointerdown", function (e) {
+      if (joy.active || state !== "playing") return;
+      if (e.target && e.target.closest && e.target.closest("button")) return;
       e.preventDefault();
       var p = canvasPos(e);
       joy.active = true;
@@ -1825,22 +1829,21 @@
       joy.cx = p.x; joy.cy = p.y;
       joy.x = p.x; joy.y = p.y;
       joyApply();
-      try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* syntetické eventy */ }
     });
-    canvas.addEventListener("pointermove", function (e) {
+    window.addEventListener("pointermove", function (e) {
       if (!joy.active || e.pointerId !== joy.id) return;
       e.preventDefault();
       var p = canvasPos(e);
       joy.x = p.x; joy.y = p.y;
       joyApply();
     });
-    canvas.addEventListener("pointerup", function (e) {
+    window.addEventListener("pointerup", function (e) {
       if (e.pointerId === joy.id) joyRelease();
     });
-    canvas.addEventListener("pointercancel", function (e) {
+    window.addEventListener("pointercancel", function (e) {
       if (e.pointerId === joy.id) joyRelease();
     });
-    canvas.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    window.addEventListener("contextmenu", function (e) { e.preventDefault(); });
   }
 
   document.getElementById("t-pause").addEventListener("click", togglePause);
