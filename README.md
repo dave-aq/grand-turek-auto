@@ -43,9 +43,9 @@ Vpravo nahoře je **❚❚** pauza.
 - Projetí na červenou = +200 hlasů; **každý pruh má vlastní semafor**
   (50 % času červená), rozhoduje pruh, kterým projedeš.
 - Od 200 km/h běží **PLYNULÁ JÍZDA** („německá dálnice") — hlasy naskakují,
-  dokud rychlost držíš, a počítadlo roste. Na maximálce **325 km/h** se
-  přepne **REŽIM OSTRAVA** s trojnásobným přílivem. Zatáčení rychlost žere,
-  takže to udržíš jen rovně.
+  dokud rychlost držíš, a počítadlo roste. Na maximálce **325 km/h**
+  propukne **OSTRAVA!!!** („žádné brzdy nejsou dost dobré")
+  s trojnásobným přílivem. Zatáčení rychlost žere, takže to udržíš jen rovně.
 - Elektromobily jedou potichu, nesou nejvíc hlasů a bonus +150.
 - Náraz do **sanitky** = krvavý titulek SKANDÁL přes obrazovku… a +500
   hlasů. Turek prostě nemůže prohrát. (Karoserie to ovšem schytá nejvíc

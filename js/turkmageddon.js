@@ -444,8 +444,8 @@
     var fx = centerXOf(c), fy = H * 0.55;
     spawnSparks(fx, fy);
 
-    // hranatá legenda má pořádné auto — vydrží řádově víc ran
-    var dmg = (3 + relKmh * 0.08) * (c.type.tough || 1);
+    // hranatá legenda má Mercedes G — ten něco vydrží
+    var dmg = (1.5 + relKmh * 0.04) * (c.type.tough || 1);
 
     if (c.type.ambulance) {
       // skandál, ale hlasy to jen přidá — Turek prostě nemůže prohrát
@@ -505,7 +505,7 @@
     spawnSparks(W / 2, H * 0.55);
     speed *= 0.3;
 
-    health -= 30 * 1.4;
+    health -= 15 * 1.4;
     var tier = hpTier();
     if (tier > lastTier) addCrack();
     lastTier = tier;
@@ -1491,18 +1491,18 @@
       ctx.scale(pulse, pulse);
       ctx.textAlign = "center";
       ctx.lineJoin = "round";
-      ctx.font = "bold " + (flowOstrava ? 52 : 46) + "px Arial";
+      ctx.font = "bold " + (flowOstrava ? 56 : 46) + "px Arial";
       ctx.lineWidth = 8;
       ctx.strokeStyle = flowOstrava ? "#4a0d05" : "#7a1010";
-      ctx.strokeText(flowOstrava ? "REŽIM OSTRAVA!" : "PLYNULÁ JÍZDA!", 0, 0);
+      ctx.strokeText(flowOstrava ? "OSTRAVA!!!" : "PLYNULÁ JÍZDA!", 0, 0);
       ctx.fillStyle = flowOstrava ? "#ff5d3d" : "#ffd23f";
-      ctx.fillText(flowOstrava ? "REŽIM OSTRAVA!" : "PLYNULÁ JÍZDA!", 0, 0);
+      ctx.fillText(flowOstrava ? "OSTRAVA!!!" : "PLYNULÁ JÍZDA!", 0, 0);
       ctx.font = "italic bold 16px Arial";
       ctx.lineWidth = 4;
       ctx.strokeStyle = "#000";
-      ctx.strokeText(flowOstrava ? "325 km/h!" : "německá dálnice", 0, 23);
+      ctx.strokeText(flowOstrava ? "„žádné brzdy nejsou dost dobré“" : "německá dálnice", 0, 23);
       ctx.fillStyle = "#e8e8e8";
-      ctx.fillText(flowOstrava ? "325 km/h!" : "německá dálnice", 0, 23);
+      ctx.fillText(flowOstrava ? "„žádné brzdy nejsou dost dobré“" : "německá dálnice", 0, 23);
       // počítadlo roste s nasbíranými hlasy
       var cSize = 16 + Math.min(30, flowTotal * 0.03);
       ctx.font = "bold " + cSize + "px Arial";
