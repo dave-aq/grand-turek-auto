@@ -336,21 +336,15 @@
       ctx.restore();
     }
 
-    // aviatorky při kombu
+    // aviatorky při kombu — velké kapkovité, přes půl obličeje
     if (this.sunglasses && e !== "ko") {
-      ctx.fillStyle = "#17150f";
-      ctx.fillRect(30, 36, 15, 10);
-      ctx.fillRect(55, 36, 15, 10);
-      ctx.fillRect(32, 46, 11, 2);
-      ctx.fillRect(57, 46, 11, 2);
-      ctx.strokeStyle = "#c9a25a"; ctx.lineWidth = 1.6;
-      line(ctx, 45, 38, 55, 38);
-      line(ctx, 46, 41, 54, 41);
-      line(ctx, 13, 39, 30, 38);
-      line(ctx, 87, 39, 70, 38);
-      ctx.fillStyle = "rgba(255,255,255,0.35)";
-      ctx.fillRect(33, 38, 4, 2);
-      ctx.fillRect(58, 38, 4, 2);
+      aviatorLens(ctx, 37, 42, 1);
+      aviatorLens(ctx, 63, 42, -1);
+      ctx.strokeStyle = "#d9b25e"; ctx.lineWidth = 1.8;
+      line(ctx, 48, 33, 52, 33);      // dvojitý můstek
+      line(ctx, 47, 36.5, 53, 36.5);
+      line(ctx, 25, 34, 14, 37);      // nožičky k uším
+      line(ctx, 75, 34, 86, 37);
     }
 
     // pot při panice
@@ -373,6 +367,49 @@
     drawFrame(ctx, opts);
     ctx.restore();
   };
+
+  // jedno kapkovité sklo aviatorek: rovná horní hrana, velká kapka dolů,
+  // gradientní ztmavení, zlatý rám a odlesk; flip zrcadlí pro druhé oko
+  function aviatorLens(ctx, cx, cy, flip) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(flip, 1);
+    ctx.beginPath();
+    ctx.moveTo(-12, -9);
+    ctx.lineTo(12, -9);
+    ctx.quadraticCurveTo(13.5, 4, 7, 10);
+    ctx.quadraticCurveTo(0, 15.5, -6, 12.5);
+    ctx.quadraticCurveTo(-13.5, 8, -12, -9);
+    ctx.closePath();
+    ctx.fillStyle = "#17150f";
+    ctx.fill();
+    // gradientní spodek skla
+    ctx.clip();
+    ctx.fillStyle = "rgba(120,100,70,0.35)";
+    ctx.fillRect(-14, 4, 28, 12);
+    // odlesk
+    ctx.fillStyle = "rgba(255,255,255,0.3)";
+    ctx.beginPath();
+    ctx.moveTo(-8, -9); ctx.lineTo(-2, -9); ctx.lineTo(-7, 9); ctx.lineTo(-11, 5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    // zlatý rám
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(flip, 1);
+    ctx.beginPath();
+    ctx.moveTo(-12, -9);
+    ctx.lineTo(12, -9);
+    ctx.quadraticCurveTo(13.5, 4, 7, 10);
+    ctx.quadraticCurveTo(0, 15.5, -6, 12.5);
+    ctx.quadraticCurveTo(-13.5, 8, -12, -9);
+    ctx.closePath();
+    ctx.strokeStyle = "#d9b25e";
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+    ctx.restore();
+  }
 
   function drawFrame(ctx, opts) {
     if (opts.frameless) return;
