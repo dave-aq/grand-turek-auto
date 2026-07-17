@@ -56,6 +56,7 @@ obrázkem je tmavý rám panelu/zrcátka.
 | `smug.png` | smug and superior — one eyebrow raised high, self-satisfied lopsided smirk |
 | `disgust.png` | disgusted — narrowed eyes, curled upper lip, sneering at something distasteful |
 | `most.png` | delighted — eyes closed content, licking lips after a drink of fresh cider |
+| `grit.png` | grimly determined — lowered knitted brows, narrowed focused eyes, mouth pressed into a tight line, white-knuckle concentration at top speed |
 
 Zrcátko ve hře obraz stranově převrací (mrknutí „přeskočí" na druhé
 oko — to je správně, je to odraz). Všechny varianty musí být ze stejného

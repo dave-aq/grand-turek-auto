@@ -10,12 +10,12 @@
 
   /* ---------------------- stavový automat ---------------------- */
 
-  var PRIORITY = { ko: 100, pain: 80, panic: 70, most: 55, kill: 50, redlight: 40, rage: 30, disgust: 28, smug: 25 };
-  var EXPR = { ko: "ko", pain: "pain", panic: "panic", most: "most", kill: "grin", redlight: "wink", rage: "rage", disgust: "disgust", smug: "smug" };
-  var DURATION = { ko: Infinity, pain: 0.7, panic: 1.6, most: 1.3, kill: 0.9, redlight: 0.9, rage: 0.8, disgust: 0.9, smug: 1.0 };
+  var PRIORITY = { ko: 100, pain: 80, panic: 70, most: 55, kill: 50, redlight: 40, rage: 30, disgust: 28, grit: 26, smug: 25 };
+  var EXPR = { ko: "ko", pain: "pain", panic: "panic", most: "most", kill: "grin", redlight: "wink", rage: "rage", disgust: "disgust", grit: "grit", smug: "smug" };
+  var DURATION = { ko: Infinity, pain: 0.7, panic: 1.6, most: 1.3, kill: 0.9, redlight: 0.9, rage: 0.8, disgust: 0.9, grit: 1.0, smug: 1.0 };
 
   var SPRITE_KEYS = ["neutral", "grin", "wink", "rage", "pain", "panic", "ko", "sunglasses",
-                     "smug", "disgust", "most"];
+                     "smug", "disgust", "most", "grit"];
   var SPRITES = { tried: false, imgs: {} };
 
   function tryLoadSprites() {
@@ -245,6 +245,16 @@
       "....PPPP.",
       "....PPP.."
     ] },
+    // GRIT: urputné soustředění při plynulé jízdě
+    browsGrit:   { x: 10, y: 14, rows: [
+      ".BBBBBB..BBBBBB.",
+      "......B..B......"
+    ] },
+    mouthGrit:   { x: 12, y: 28, rows: [
+      "k.........k",
+      ".kkkkkkkkk.",
+      ".sssssssss."
+    ] },
     // pohled do strany (Doom look)
     eyesLookL:   { x: 10, y: 15, rows: [
       ".kkkkk....kkkkk.",
@@ -266,7 +276,8 @@
     ko:      ["eyesX", "mouthO", "tongue"],
     smug:    ["browsSmug", "eyesOpen", "mouthSmug"],
     disgust: ["browsFlat", "eyesNarrow", "mouthDisgust"],
-    most:    ["browsRaised", "eyesHappy", "mouthLick"]
+    most:    ["browsRaised", "eyesHappy", "mouthLick"],
+    grit:    ["eyesNarrow", "browsGrit", "mouthGrit"]
   };
 
   var cache = {};

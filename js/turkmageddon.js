@@ -249,7 +249,7 @@
         addFloat(W / 2, H * 0.35, "Plynulá jízda! +" + flowTotal + " hlasů", "#ffd23f");
       }
     }
-    if (flowActive) face.trigger("smug");   // spokojený ksicht při plynulé jízdě
+    if (flowActive) face.trigger("grit");   // urputné soustředění při 200+
 
     var speedPct = speed / MAXS;
     prevPos = position;
