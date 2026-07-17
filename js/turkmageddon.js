@@ -68,7 +68,7 @@
       var len = 60 + Math.floor(Math.random() * 80);
       var target = 0;
       if (Math.random() >= 0.3) {
-        target = dir * (1.5 + Math.random() * 2.5);
+        target = dir * Math.random() * 4;   // původní jemnost, jen se střídají směry
         dir = -dir;
       }
       plan.push({ len: len, target: target });
